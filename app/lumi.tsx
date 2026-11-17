@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { chat } from '@/ai';
 import { LumiFace } from '@/components/Lumi';
@@ -20,7 +20,7 @@ export default function LumiChat() {
   ]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
 
   async function send() {
     const text = input.trim();
