@@ -23,7 +23,7 @@ Inspiração de produto e de estilo: [OhMy! Journal](https://ohmyjournal.app/), 
 
 ## Stack
 
-- **Expo SDK 54** + **Expo Router** (rotas por arquivo em `app/`)
+- **Expo SDK 58** + **Expo Router** (rotas por arquivo em `app/`)
 - TypeScript
 - `AsyncStorage` para os dados locais (tudo fica no aparelho)
 - `expo-image-picker`, `expo-location`, `react-native-maps`, `expo-notifications`, `expo-haptics`

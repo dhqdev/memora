@@ -1,5 +1,5 @@
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { router, Tabs } from 'expo-router';
+import type { BottomTabBarProps } from 'expo-router/tabs';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +9,7 @@ import { useStore } from '@/store';
 import { useTheme } from '@/theme';
 
 /** Cabeçalho "Memora" + botões + abas em texto no topo (estilo do OhMy). */
-function TopBar({ state, descriptors, navigation }: BottomTabBarProps) {
+function TopBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProps) {
   const c = useTheme();
   const insets = useSafeAreaInsets();
   return (
@@ -30,8 +30,8 @@ function TopBar({ state, descriptors, navigation }: BottomTabBarProps) {
             <Pressable
               key={route.key}
               onPress={() => {
-                const e = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-                if (!focused && !e.defaultPrevented) navigation.navigate(route.name);
+                const e = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                if (!focused && !e.defaultPrevented) navigateToTab(route.key);
               }}
               style={[styles.tab, focused && { borderBottomColor: c.text }]}
             >

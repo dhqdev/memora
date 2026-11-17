@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   View,
+  type ScrollViewInstance,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { reactToAnswer, welcomeMessage } from '@/ai';
@@ -49,7 +50,7 @@ export default function Onboarding() {
     interests: [],
     reminder: 'off',
   });
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
 
   const lumiSays = (...texts: string[]) => {
     setTypingDone(false);
