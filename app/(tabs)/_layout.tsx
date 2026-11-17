@@ -1,20 +1,23 @@
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router, Tabs } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/tabs';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon } from '@/components/Icon';
 import { LumiFab } from '@/components/Lumi';
 import { Avatar, IconButton } from '@/components/ui';
 import { photoUri } from '@/photos';
 import { useStore } from '@/store';
-import { EASE_OUT, F, useTheme } from '@/theme';
+import { F, SPRING, useTheme } from '@/theme';
 
 /**
- * Cabeçalho: marca + tiles de vidro (perfil, ajustes, novo moment) e as abas
- * em texto com um sublinhado que desliza até a aba ativa.
- * Trocar de aba é a ação mais frequente: a tela troca na hora, só o traço anda.
+ * Cabeçalho: marca + tiles de vidro (busca, perfil, novo moment) e as abas
+ * em texto com um sublinhado que desliza com mola até a aba ativa.
+ * A tela troca com um "shift" curto (desliza um pouquinho para o lado da aba),
+ * então o olho entende de que lado veio — sem atrasar quem troca toda hora.
  */
 function TopBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProps) {
   const c = useTheme();
@@ -27,9 +30,8 @@ function TopBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProp
   useEffect(() => {
     const l = layouts[state.index];
     if (!l) return;
-    const cfg = { duration: 220, easing: Easing.bezier(...EASE_OUT) };
-    x.value = w.value === 0 ? l.x : withTiming(l.x, cfg);
-    w.value = w.value === 0 ? l.w : withTiming(l.w, cfg);
+    x.value = w.value === 0 ? l.x : withSpring(l.x, SPRING.snappy);
+    w.value = w.value === 0 ? l.w : withSpring(l.w, SPRING.snappy);
   }, [state.index, layouts, x, w]);
 
   const underline = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }], width: w.value }));
@@ -37,14 +39,19 @@ function TopBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProp
   return (
     <View style={{ paddingTop: insets.top + 10, backgroundColor: c.bg, paddingHorizontal: 20 }}>
       <View style={styles.row}>
-        <Text style={[styles.brand, { color: c.text }]}>Memora</Text>
+        <Animated.View entering={FadeIn.duration(500)} style={styles.brandWrap}>
+          <Text style={[styles.brand, { color: c.text }]}>Memora</Text>
+          <View style={styles.spark}>
+            <Icon name="sparkle" size={13} color={c.text} />
+          </View>
+        </Animated.View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
+          <IconButton icon="search" label="Buscar" onPress={() => router.push('/search')} />
           <IconButton label="Seu perfil" onPress={() => router.push('/profile')}>
             <Avatar name={profile.name || 'M'} size={38}>
               {profile.photo ? <Image source={{ uri: photoUri(profile.photo) }} style={StyleSheet.absoluteFill} /> : undefined}
             </Avatar>
           </IconButton>
-          <IconButton icon="sliders" label="Ajustes" onPress={() => router.push('/settings')} />
           <IconButton icon="plus" filled label="Novo moment" onPress={() => router.push('/new-moment')} />
         </View>
       </View>
@@ -68,11 +75,14 @@ function TopBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProp
               }}
               onPress={() => {
                 const e = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-                if (!focused && !e.defaultPrevented) navigateToTab(route.key);
+                if (!focused && !e.defaultPrevented) {
+                  if (profile.haptics) Haptics.selectionAsync().catch(() => {});
+                  navigateToTab(route.key);
+                }
               }}
               style={styles.tab}
             >
-              <Text style={{ color: focused ? c.text : c.muted, fontFamily: F.medium, fontSize: 16 }}>{label}</Text>
+              <Text style={{ color: focused ? c.text : c.muted, fontFamily: F.medium, fontSize: 16, letterSpacing: -0.2 }}>{label}</Text>
             </Pressable>
           );
         })}
@@ -92,7 +102,7 @@ export default function TabsLayout() {
         screenOptions={{
           headerShown: false,
           tabBarPosition: 'top',
-          animation: 'none',
+          animation: 'shift',
           sceneStyle: { backgroundColor: c.bg },
         }}
       >
@@ -108,7 +118,9 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brand: { fontFamily: F.semibold, fontSize: 34, letterSpacing: -1 },
+  brandWrap: { flexDirection: 'row', alignItems: 'flex-start' },
+  brand: { fontFamily: F.bold, fontSize: 34, letterSpacing: -1.6 },
+  spark: { marginLeft: 2, marginTop: 4 },
   tabs: { flexDirection: 'row', gap: 20, marginTop: 18, borderBottomWidth: StyleSheet.hairlineWidth },
   tab: { paddingBottom: 10 },
   underline: { position: 'absolute', left: 0, bottom: -StyleSheet.hairlineWidth, height: 1.5 },

@@ -17,6 +17,7 @@ import { reactToAnswer, welcomeMessage } from '@/ai';
 import { toHandle } from '@/rules';
 import { LumiFace, Mood } from '@/components/Lumi';
 import { SpeechBubble } from '@/components/SpeechBubble';
+import { Welcome } from '@/components/Welcome';
 import { Chip, Label, PrimaryButton, Segmented, TypingBubble } from '@/components/ui';
 import { useStore } from '@/store';
 import { body, radius, useTheme } from '@/theme';
@@ -24,6 +25,8 @@ import { Pronoun, Reminder } from '@/types';
 
 type Step = 'intro' | 'name' | 'pronoun' | 'interests' | 'people' | 'reminder' | 'welcome';
 type Msg = { from: 'lumi' | 'me'; text: string };
+
+const ORDER: Step[] = ['intro', 'name', 'pronoun', 'interests', 'people', 'reminder', 'welcome'];
 
 const INTERESTS = ['Dia a dia', 'Amigos', 'Família', 'Amor', 'Estudos', 'Treino', 'Viagens', 'Trabalho', 'Comida', 'Música'];
 
@@ -38,6 +41,8 @@ const QUESTIONS: Record<Exclude<Step, 'intro' | 'welcome'>, string> = {
 export default function Onboarding() {
   const c = useTheme();
   const { updateProfile, upsertPerson, profile } = useStore();
+  // primeiro a tela de boas-vindas (manchete); depois a conversa com a Lumi
+  const [started, setStarted] = useState(false);
   const [step, setStep] = useState<Step>('intro');
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [typingDone, setTypingDone] = useState(false);
@@ -59,12 +64,14 @@ export default function Onboarding() {
   };
 
   useEffect(() => {
+    if (!started) return;
     lumiSays('Oi! Eu sou a Lumi. Prazer te conhecer ✦');
-    setTimeout(
+    const t = setTimeout(
       () => lumiSays('Aqui no Memora você guarda pedacinhos do seu dia, e eu transformo eles em histórias pra você reler depois.'),
       1600,
     );
-  }, []);
+    return () => clearTimeout(t);
+  }, [started]);
 
   useEffect(() => {
     setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 80);
@@ -105,12 +112,22 @@ export default function Onboarding() {
   const lastLumiIndex = msgs.map((m) => m.from).lastIndexOf('lumi');
   const showControls = typingDone && !thinking;
 
+  if (!started) return <Welcome onStart={() => setStarted(true)} />;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.header}>
+        <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
           <Label>Memora · boas-vindas</Label>
-        </View>
+          <View style={styles.progress}>
+            {ORDER.map((s, i) => (
+              <View
+                key={s}
+                style={[styles.step, { backgroundColor: i <= ORDER.indexOf(step) ? c.text : c.border, width: s === step ? 18 : 6 }]}
+              />
+            ))}
+          </View>
+        </Animated.View>
 
         <ScrollView ref={scroll} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
           <View style={{ alignItems: 'center', marginBottom: 24 }}>
@@ -259,7 +276,9 @@ export default function Onboarding() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingTop: 8 },
+  header: { paddingHorizontal: 20, paddingTop: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  progress: { flexDirection: 'row', gap: 4, alignItems: 'center' },
+  step: { height: 6, borderRadius: 3 },
   me: { alignSelf: 'flex-end', paddingVertical: 10, paddingHorizontal: 14, borderRadius: radius.md, marginBottom: 10, maxWidth: '80%' },
   controls: { padding: 20, borderTopWidth: StyleSheet.hairlineWidth },
   input: { flex: 1, height: 54, borderRadius: radius.pill, paddingHorizontal: 20, fontSize: 16 },

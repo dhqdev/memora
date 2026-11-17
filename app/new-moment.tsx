@@ -2,8 +2,8 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -18,6 +18,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { commentMoment, fallbackTitle, suggestTitle } from '@/ai';
 import { canComment, extractMentions } from '@/rules';
+import Animated, { FadeOut, LinearTransition, ZoomIn } from 'react-native-reanimated';
+import { Icon } from '@/components/Icon';
 import { Chip, Label, PrimaryButton, monoText } from '@/components/ui';
 import { persistPhoto } from '@/photos';
 import { uid, useStore } from '@/store';
@@ -35,6 +37,15 @@ export default function NewMoment() {
   const [locating, setLocating] = useState(false);
   const [storyId, setStoryId] = useState<string | undefined>(stories[0]?.id);
   const [saving, setSaving] = useState(false);
+  // aberto pelo botão de câmera da tela inicial: a câmera já abre
+  const { camera } = useLocalSearchParams<{ camera?: string }>();
+  useEffect(() => {
+    if (!camera) return;
+    // espera o modal terminar de subir: o iOS não abre a câmera no meio da animação
+    const t = setTimeout(takePhoto, 450);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // aberto por link direto não tem tela pra voltar: cai na lista de moments
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
@@ -133,11 +144,19 @@ export default function NewMoment() {
             style={[body(16, c.text), styles.body]}
           />
 
-          <ScrollView horizontal style={{ marginVertical: 12 }}>
-            {photos.map((uri) => (
-              <Pressable key={uri} onLongPress={() => setPhotos((p) => p.filter((x) => x !== uri))}>
-                <Image source={{ uri }} style={styles.photo} contentFit="cover" />
-              </Pressable>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 12 }} contentContainerStyle={{ paddingTop: 8, paddingRight: 8 }}>
+            {photos.map((uri, i) => (
+              <Animated.View key={uri} entering={ZoomIn.springify().damping(16)} exiting={FadeOut.duration(160)} layout={LinearTransition.duration(220)}>
+                <Image source={{ uri }} style={[styles.photo, { transform: [{ rotate: i % 2 ? '1.5deg' : '-1.5deg' }] }]} contentFit="cover" />
+                <Pressable
+                  onPress={() => setPhotos((p) => p.filter((x) => x !== uri))}
+                  hitSlop={10}
+                  accessibilityLabel="Tirar foto do moment"
+                  style={[styles.remove, { backgroundColor: c.invert, borderColor: c.bg }]}
+                >
+                  <Icon name="close" size={12} color={c.invertText} />
+                </Pressable>
+              </Animated.View>
             ))}
           </ScrollView>
 
@@ -175,5 +194,16 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
   title: { marginTop: 10, paddingVertical: 0 },
   body: { minHeight: 100, marginTop: 10, textAlignVertical: 'top' },
-  photo: { width: 104, height: 128, borderRadius: radius.sm, marginRight: 8 },
+  photo: { width: 104, height: 128, borderRadius: radius.sm + 2, marginRight: 10 },
+  remove: {
+    position: 'absolute',
+    top: -6,
+    right: 2,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import React, { useEffect } from 'react';
 import {
   Pressable,
@@ -18,6 +19,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { photoUri } from '../photos';
 import { F, heading, highlightFor, mono, radius, useTheme } from '../theme';
 import { Glass } from './Glass';
 import { Icon, IconName } from './Icon';
@@ -93,12 +95,15 @@ export function PrimaryButton({
   disabled,
   style,
   icon,
+  trailing,
 }: {
   title: string;
   onPress: () => void;
   disabled?: boolean;
   style?: ViewStyle;
   icon?: IconName;
+  /** ícone depois do texto (ex.: a seta do "Começar →") */
+  trailing?: IconName;
 }) {
   const c = useTheme();
   return (
@@ -110,6 +115,7 @@ export function PrimaryButton({
     >
       {icon ? <Icon name={icon} size={20} color={c.invertText} /> : null}
       {title ? <Text style={[styles.primaryText, { color: c.invertText }]}>{title}</Text> : null}
+      {trailing ? <Icon name={trailing} size={18} color={c.invertText} /> : null}
     </PressableScale>
   );
 }
@@ -236,6 +242,46 @@ export function Avatar({ name, size = 56, children }: { name: string; size?: num
   );
 }
 
+/** Bolinhas sobrepostas de quem estava junto (com borda da cor do fundo). */
+export function AvatarStack({
+  people,
+  size = 22,
+  max = 4,
+}: {
+  people: { id: string; name: string; photo?: string }[];
+  size?: number;
+  max?: number;
+}) {
+  const c = useTheme();
+  if (!people.length) return null;
+  const shown = people.slice(0, max);
+  const extra = people.length - shown.length;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      {shown.map((p, i) => (
+        <View key={p.id} style={{ marginLeft: i ? -size * 0.3 : 0, borderRadius: size, borderWidth: 1.5, borderColor: c.bg }}>
+          <Avatar name={p.name} size={size}>
+            {p.photo ? <Image source={{ uri: photoUri(p.photo) }} style={StyleSheet.absoluteFill} contentFit="cover" /> : undefined}
+          </Avatar>
+        </View>
+      ))}
+      {extra > 0 && <Text style={[monoText(c.muted, 10), { marginLeft: 4 }]}>+{extra}</Text>}
+    </View>
+  );
+}
+
+/** Pílula de contorno com o story do moment: "Story · Amigos · 2026". */
+export function StoryPill({ label, onPress }: { label: string; onPress?: () => void }) {
+  const c = useTheme();
+  return (
+    <PressableScale onPress={onPress} disabled={!onPress} scaleTo={0.95} style={[styles.pill, { borderColor: c.border }]}>
+      <Text style={monoText(c.text, 10)} numberOfLines={1}>
+        {label}
+      </Text>
+    </PressableScale>
+  );
+}
+
 /** Três pontinhos pulsando dentro do balão preto: a Lumi está escrevendo. */
 export function TypingBubble() {
   const c = useTheme();
@@ -302,4 +348,5 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   dot: { width: 6, height: 6, backgroundColor: '#F2EFE6' },
+  pill: { borderWidth: 1, borderRadius: radius.pill, paddingHorizontal: 9, paddingVertical: 4, flexShrink: 1 },
 });

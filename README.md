@@ -12,14 +12,17 @@ Inspiração de produto e de estilo: [OhMy! Journal](https://ohmyjournal.app/), 
 
 | Área | O que faz |
 |---|---|
+| **Boas-vindas** | Primeira tela no estilo do site: etiqueta mono, manchete enorme ("O diário que responde."), e dois celulares tortos flutuando com telas do Memora desenhadas em código. Depois vem a conversa com a Lumi, com pontinhos de progresso. |
 | **Boas-vindas com IA** | Uma conversa leve com a Lumi: nome, como ela deve falar com você (ele/ela/neutro), o que você quer guardar, pessoas importantes e lembrete da noite. A cada resposta a Lumi reage com IA, e no final escreve uma mensagem de boas-vindas personalizada. |
-| **Moments** | Linha do tempo agrupada por mês, com fotos, lugar, story e pessoas. Marque amigos com `@nome` e uma página da pessoa é criada automaticamente. |
+| **Moments** | Abre com "Bom dia, Caio." e **sua semana** em bolinhas (com a foto do dia). Uma caixa "Como foi hoje?" salva um moment em segundos, com atalho direto pra câmera. Linha do tempo por mês: uma foto em retrato ou duas lado a lado, quem estava junto (bolinhas sobrepostas), pílula do story e o lugar. Marque amigos com `@nome` e uma página da pessoa é criada automaticamente. |
+| **Busca** | Tile de lupa no topo. Procura em título, texto, @pessoas, lugar e story, **sem ligar pra acento** ("cafe" acha "Café"), e pinta o trecho achado com marca-texto. |
+| **Moment aberto** | Fotos grandes em páginas, com pontinhos que esticam e contador. Ao rolar, as fotos ficam pra trás (parallax); puxando pra baixo, esticam. Quando o título some, ele sobe pro topo da tela. Toque abre a foto em tela cheia (pinça pra zoom no iPhone). |
 | **Pessoas pelos rostos** | O app acha os rostos nas fotos que você salva (no próprio aparelho) e monta as bolinhas de pessoas com eles, ordenadas por quem mais aparece. Rosto sem nome cai no **Quem é?**: um toque liga o rosto a alguém, a "Sou eu" ou a "Não é ninguém". Dá pra juntar duas pessoas que são a mesma. |
-| **Stories** | Capítulos por parte da vida (Dia a dia, Amigos, Família, Estudos…). A Lumi escreve e reescreve cada capítulo a partir dos seus moments. |
-| **Calendário** | Mês em grade com a miniatura de cada dia que tem moment. |
+| **Stories** | Capítulos por parte da vida (Dia a dia, Amigos, Família, Estudos…). A Lumi escreve e reescreve cada capítulo a partir dos seus moments. Abrir um story mostra a mesma capa pontilhada do card, grande e em parallax, e o texto em tipografia de leitura. |
+| **Calendário** | Um letreiro com as fotos do mês andando devagar (em degraus, levemente tortas, como fotos coladas) e o mês em grade com a miniatura de cada dia. Trocar de mês desliza para o lado da seta; hoje fica marcado. |
 | **Lugares** | Mapa com pins de foto e um carrossel de vidro: deslize e o mapa voa até o lugar. No iOS usa o Apple Maps (tom discreto); no Android, Google Maps com estilo próprio creme/grafite. |
-| **Perfil** | Foto, nome, @usuário, bio, números, suas pessoas e o grid dos seus moments. Dá pra compartilhar. |
-| **Lumi** | Botão flutuante para conversar com ela. Ela conhece seus moments recentes. |
+| **Perfil** | Foto, nome, @usuário, bio, números, suas pessoas e o grid dos seus moments. Dá pra compartilhar. Os **Ajustes** abrem pelo tile de sliders no topo do perfil. |
+| **Lumi** | Botão flutuante para conversar com ela. Ela conhece seus moments recentes. Na primeira mensagem aparecem sugestões ("O que eu fiz essa semana?"…). |
 | **Ajustes** | Nome, pronome, tema (claro/escuro/sistema), voz da Lumi (um "pio" baixinho por palavra), vibração, mostrar a Lumi, notificações e apagar todos os dados (inclusive as fotos). |
 | **Memora+** | Paywall (anual com 7 dias grátis / mensal). No grátis: a Lumi comenta 10 moments e você tem 4 stories. *As compras ainda não estão integradas.* |
 
@@ -33,9 +36,25 @@ Inspiração de produto e de estilo: [OhMy! Journal](https://ohmyjournal.app/), 
 - `react-native-reanimated` para as transições (entrada dos itens, "digitando…", toque, Lumi flutuando)
 - `@shopify/react-native-skia` para o efeito pontilhado (dithering) das capas dos stories
 - Fontes Inter Tight (títulos), JetBrains Mono (etiquetas) e Pixelify Sans (falas da Lumi), via `@expo-google-fonts`
-- **Liquid Glass** da Apple com `expo-glass-effect` nos botões, cartões do mapa e na assinatura (no Android e iOS antigo cai para um bloco translúcido)
+- **Liquid Glass** da Apple com `expo-glass-effect` nos botões, cartões do mapa e na assinatura (no iOS antigo cai para um desfoque de verdade com `expo-blur`; no Android, para um bloco translúcido)
 - A Lumi é um retrato original em traço preto e branco, estilo mangá, desenhado em SVG (`src/components/lumiArt.ts`): franja em mechas, presilha ✦, olhos com íris em camadas, blush em retícula e suéter de gola canelada. 4 humores (feliz, animada, pensando, com sono) e piscada
 - **Servidor de IA** em `server/index.mjs` (Node puro, zero dependências) chamando a API da Anthropic
+
+## Visual e movimento
+
+A referência é o [OhMy! Journal](https://ohmyjournal.app/): fundo quase-preto quente (`#121211`), papel creme, títulos grandes e apertados, etiquetas em mono e a Lumi falando em fonte pixel.
+
+| Onde | O que acontece |
+|---|---|
+| Entre telas | iOS: o empurrão nativo, e dá pra voltar arrastando de qualquer ponto da tela. Android: a mesma coreografia do iOS (`ios_from_right`). Modais sobem de baixo; busca e fotos abrem por cima com fade. |
+| Abas | O sublinhado anda com mola até a aba; a tela entra com um "shift" curto do lado certo, e um toque leve de vibração. |
+| Listas | Itens entram subindo em cascata (só os primeiros esperam). |
+| Fotos e capas | Entram crescendo de 92% para 100% (`popIn`); no moment e no story ficam em parallax e esticam ao puxar. |
+| Topo das telas internas | Quando o título grande sai da tela, a etiqueta ("MOMENT") vira o próprio título e aparece um fio embaixo. |
+| Calendário | Letreiro de fotos andando devagar; para quando a aba sai de foco. |
+| Boas-vindas | Os celulares flutuam devagar, fora de fase. |
+
+Tudo respeita **Reduzir movimento** do sistema (o letreiro e a flutuação param). As peças ficam em `src/components/motion.tsx` (`popIn`, `riseIn`, `EdgeFade`) e as molas em `src/theme.ts` (`SPRING`).
 
 ## Estrutura
 
@@ -51,6 +70,8 @@ memora/
 │   ├── story/[id].tsx        # capítulo escrito pela Lumi
 │   ├── person/[id].tsx
 │   ├── lumi.tsx              # chat com a Lumi
+│   ├── search.tsx            # busca (moments, pessoas, lugares, stories)
+│   ├── viewer.tsx            # foto em tela cheia
 │   ├── settings.tsx
 │   └── paywall.tsx
 ├── src/
@@ -58,13 +79,14 @@ memora/
 │   ├── store.tsx             # estado global (grava no banco a cada ação)
 │   ├── db/                   # SQLite: schema + migrações, leitura/escrita, importação
 │   ├── rules.ts              # regras do produto (limites, @menções, lembrete)
+│   ├── search.ts             # busca sem acento + marca-texto (com testes)
 │   ├── reminders.ts          # agenda o lembrete só nos dias sem moment
 │   ├── photos.ts             # copia as fotos pra pasta do app
 │   ├── map/styles.ts         # estilo do mapa no Android
 │   ├── faces/                # rostos: detecção (ML Kit), recorte, regras e varredura
 │   ├── theme.ts              # cores, tema claro/escuro
 │   ├── types.ts
-│   └── components/           # Lumi, SpeechBubble, botões, segmented…
+│   └── components/           # Lumi, SpeechBubble, botões, Welcome, PhotoCarousel, PhotoMarquee, motion…
 ├── __tests__/                # testes (Jest)
 ├── server/index.mjs          # backend da IA (a chave fica só aqui)
 └── assets/                   # ícone e splash (provisórios)
@@ -117,7 +139,7 @@ Ficam em `src/rules.ts` e têm testes:
 ## Testes
 
 ```bash
-npm test          # Jest: regras, rostos, banco (SQLite de verdade), datas, arte da Lumi
+npm test          # Jest: regras, rostos, banco (SQLite de verdade), datas, busca, arte da Lumi
 npm run lint      # checagem de tipos (tsc)
 ```
 
@@ -190,7 +212,7 @@ Bundle IDs atuais: `com.dhqdev.memora` (ajuste em `app.json` se quiser).
 - [ ] Deploy do servidor de IA (Render, Railway, Fly ou Vercel)
 - [ ] Mais expressões da Lumi e ilustrações para as telas vazias
 - [ ] Retrospectiva do ano e cards para compartilhar
-- [ ] Busca nos moments
+- [x] Busca nos moments
 - [ ] Ícone e splash definitivos
 
 ## Privacidade

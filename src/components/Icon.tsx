@@ -20,7 +20,10 @@ export type IconName =
   | 'share'
   | 'edit'
   | 'grid'
-  | 'locate';
+  | 'locate'
+  | 'arrow'
+  | 'sparkle'
+  | 'calendar';
 
 /** Ícones de traço fino, desenhados em SVG (24×24). */
 export function Icon({ name, size = 20, color }: { name: IconName; size?: number; color: string }) {
@@ -82,6 +85,16 @@ export function Icon({ name, size = 20, color }: { name: IconName; size?: number
         <>
           <Circle cx="12" cy="12" r="6" {...s} />
           <Path d="M12 3v3M12 18v3M3 12h3M18 12h3" {...s} />
+        </>
+      )}
+      {name === 'arrow' && <Path d="M5 12h14M13 6l6 6-6 6" {...s} />}
+      {name === 'sparkle' && (
+        <Path d="M12 3c.6 4.6 3.4 7.4 9 9-5.6 1.6-8.4 4.4-9 9-.6-4.6-3.4-7.4-9-9 5.6-1.6 8.4-4.4 9-9z" fill={color} stroke="none" />
+      )}
+      {name === 'calendar' && (
+        <>
+          <Path d="M4.5 6.5h15v13h-15z" {...s} />
+          <Path d="M4.5 10.5h15M8.5 4v4M15.5 4v4" {...s} />
         </>
       )}
       {name === 'send' && <Path d="M12 19V5M6 11l6-6 6 6" {...s} strokeWidth={2.2} />}

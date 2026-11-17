@@ -22,7 +22,7 @@
       "package": "com.dhqdev.memora",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#121212"
+        "backgroundColor": "#121211"
       },
       "permissions": [
         "ACCESS_FINE_LOCATION",
@@ -54,7 +54,7 @@
           "backgroundColor": "#F2EFE6",
           "dark": {
             "image": "./assets/splash-icon.png",
-            "backgroundColor": "#121212"
+            "backgroundColor": "#121211"
           }
         }
       ]

@@ -23,13 +23,14 @@ export const light = {
 
 export const dark: typeof light = {
   mode: 'dark',
-  bg: '#121212',
-  surface: '#1C1C1B',
-  card: '#222221',
+  // o mesmo quase-preto quente do OhMy! (#121211): nunca preto puro
+  bg: '#121211',
+  surface: '#1B1B1A',
+  card: '#232321',
   chip: '#4A4A47',
   text: '#F2EFE6',
   muted: '#9B978C',
-  border: '#33332F',
+  border: '#2E2E2B',
   accent: '#F5D565',
   accentText: '#141413',
   invert: '#F2EFE6',
@@ -59,6 +60,18 @@ export const F = {
 };
 
 export const mono = F.mono;
+
+/**
+ * Manchete: o "O diário que responde." do site. Negrito, entrelinha curta e
+ * letras bem apertadas. Use só uma por tela.
+ */
+export const hero = (size: number, color: string): TextStyle => ({
+  fontFamily: F.bold,
+  fontSize: size,
+  lineHeight: Math.round(size * 1.02),
+  letterSpacing: -size * 0.045,
+  color,
+});
 
 /** Título grande: peso médio, levemente apertado (jeito Apple). */
 export const display = (size: number, color: string): TextStyle => ({
@@ -102,3 +115,12 @@ export const radius = { xs: 4, sm: 8, md: 16, lg: 22, pill: 999 };
 export const motion = { instant: 0, fast: 160, base: 240, slow: 380 };
 /** Curva padrão: sai rápido e chega devagar. */
 export const EASE_OUT = [0.2, 0, 0, 1] as const;
+
+/**
+ * Molas (withSpring). `snappy` para coisas pequenas que respondem ao toque
+ * (sublinhado das abas, pontinhos), `soft` para blocos grandes entrando.
+ */
+export const SPRING = {
+  snappy: { damping: 20, stiffness: 320, mass: 0.8 },
+  soft: { damping: 18, stiffness: 160, mass: 1 },
+} as const;
