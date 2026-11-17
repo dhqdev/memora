@@ -14,6 +14,7 @@ Inspiração de produto e de estilo: [OhMy! Journal](https://ohmyjournal.app/), 
 |---|---|
 | **Boas-vindas com IA** | Uma conversa leve com a Lumi: nome, como ela deve falar com você (ele/ela/neutro), o que você quer guardar, pessoas importantes e lembrete da noite. A cada resposta a Lumi reage com IA, e no final escreve uma mensagem de boas-vindas personalizada. |
 | **Moments** | Linha do tempo agrupada por mês, com fotos, lugar, story e pessoas. Marque amigos com `@nome` e uma página da pessoa é criada automaticamente. |
+| **Pessoas pelos rostos** | O app acha os rostos nas fotos que você salva (no próprio aparelho) e monta as bolinhas de pessoas com eles, ordenadas por quem mais aparece. Rosto sem nome cai no **Quem é?**: um toque liga o rosto a alguém, a "Sou eu" ou a "Não é ninguém". Dá pra juntar duas pessoas que são a mesma. |
 | **Stories** | Capítulos por parte da vida (Dia a dia, Amigos, Família, Estudos…). A Lumi escreve e reescreve cada capítulo a partir dos seus moments. |
 | **Calendário** | Mês em grade com a miniatura de cada dia que tem moment. |
 | **Lugares** | Mapa com pins de foto e um carrossel de vidro: deslize e o mapa voa até o lugar. No iOS usa o Apple Maps (tom discreto); no Android, Google Maps com estilo próprio creme/grafite. |
@@ -60,6 +61,7 @@ memora/
 │   ├── reminders.ts          # agenda o lembrete só nos dias sem moment
 │   ├── photos.ts             # copia as fotos pra pasta do app
 │   ├── map/styles.ts         # estilo do mapa no Android
+│   ├── faces/                # rostos: detecção (ML Kit), recorte, regras e varredura
 │   ├── theme.ts              # cores, tema claro/escuro
 │   ├── types.ts
 │   └── components/           # Lumi, SpeechBubble, botões, segmented…
@@ -86,6 +88,19 @@ Tudo fica num arquivo SQLite no aparelho (`memora.db`), aberto em `src/db/index.
 - **Quem usava a versão antiga** (dados no AsyncStorage) tem tudo importado na primeira abertura, uma vez só. Nomes repetidos viram uma pessoa só e referências quebradas são limpas.
 - **Fotos** são copiadas para a pasta do app (`photos/`) e somem junto quando o moment é apagado.
 
+## Rostos nas fotos
+
+Tudo acontece **no aparelho**, com o Google ML Kit (`@infinitered/react-native-mlkit-face-detection`). Nenhuma foto sai do celular.
+
+1. Depois que você salva um moment, o app procura rostos nas fotos dele em segundo plano. Também passa pelos moments antigos, um de cada vez.
+2. Cada rosto vira um recorte quadrado de 256×256 (`photos/faces/`) e uma linha na tabela `faces`.
+3. Se o moment tem **um rosto só e uma pessoa só marcada com @**, o rosto já vai pra ela. Nos outros casos ele espera no **Quem é?**.
+4. Quando uma pessoa ganha um rosto e ainda não tem foto, o rosto vira a bolinha dela. Ela também passa a aparecer no moment.
+
+O app só **detecta** onde há um rosto: não cria "assinatura facial" e não reconhece ninguém sozinho. Quem é quem é sempre você que diz. Isso mantém tudo leve e longe de dados biométricos.
+
+> ⚠️ A detecção precisa do **app instalado** (`eas build --profile development` ou `npx expo run:ios`/`run:android`). No **Expo Go** o módulo nativo não existe: o app funciona normal, só não procura rostos. O ajuste fica em **Ajustes > Rostos nas fotos**.
+
 ## Regras do produto
 
 Ficam em `src/rules.ts` e têm testes:
@@ -96,12 +111,13 @@ Ficam em `src/rules.ts` e têm testes:
 | Stories | Grátis: 4. O 5º abre a assinatura. Memora+: ilimitado. |
 | `@menções` | Cada `@nome` vira uma pessoa (sem repetir, sem diferenciar maiúsculas). |
 | Lembrete da noite | Às 21h ou 22h, **só nos dias sem moment**, para os próximos 7 dias. Reagenda ao salvar ou apagar um moment. |
+| Rostos | Um rosto e um @ no moment: é dessa pessoa. Mais de um: pergunta no **Quem é?**. Bolinhas ordenadas por quantos moments a pessoa aparece (por @ ou pelo rosto). |
 | Título automático | Se você não escrever título, a Lumi sugere um; sem IA, usa a primeira frase cortada numa palavra inteira. |
 
 ## Testes
 
 ```bash
-npm test          # Jest: regras, banco (SQLite de verdade), datas, arte da Lumi
+npm test          # Jest: regras, rostos, banco (SQLite de verdade), datas, arte da Lumi
 npm run lint      # checagem de tipos (tsc)
 ```
 
@@ -179,7 +195,7 @@ Bundle IDs atuais: `com.dhqdev.memora` (ajuste em `app.json` se quiser).
 
 ## Privacidade
 
-Fotos e localização ficam no aparelho. A Lumi recebe só o texto necessário para responder. Sem anúncios, sem rastreamento.
+Fotos, rostos e localização ficam no aparelho. A detecção de rostos roda localmente e não gera dados biométricos. A Lumi recebe só o texto necessário para responder. Sem anúncios, sem rastreamento.
 
 ---
 

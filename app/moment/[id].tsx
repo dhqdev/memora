@@ -5,9 +5,10 @@ import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LumiFace } from '@/components/Lumi';
+import { FaceBubble } from '@/components/PersonAvatar';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SpeechBubble } from '@/components/SpeechBubble';
-import { Avatar, IconButton, MentionText, TypingBubble, monoText } from '@/components/ui';
+import { Avatar, IconButton, MentionText, PressableScale, TypingBubble, monoText } from '@/components/ui';
 import { isFresh } from '@/format';
 import { photoUri } from '@/photos';
 import { useStore } from '@/store';
@@ -16,11 +17,12 @@ import { body, display, F, radius, useTheme } from '@/theme';
 export default function MomentDetail() {
   const c = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { moments, people, stories, profile, deleteMoment } = useStore();
+  const { moments, people, stories, profile, faces, deleteMoment } = useStore();
   const m = moments.find((x) => x.id === id);
   if (!m) return null;
 
   const who = people.filter((p) => m.people.includes(p.id));
+  const inPhotos = faces.filter((f) => f.momentId === m.id && (f.status === 'new' || f.status === 'person'));
   const story = stories.find((s) => s.id === m.storyId);
   const date = new Date(m.date);
 
@@ -47,6 +49,27 @@ export default function MomentDetail() {
             {m.photos.map((p) => (
               <Image key={p} source={{ uri: photoUri(p) }} style={styles.photo} contentFit="cover" transition={250} />
             ))}
+          </Animated.View>
+        )}
+
+        {inPhotos.length > 0 && (
+          <Animated.View entering={FadeIn.duration(380).delay(160)} style={styles.faces}>
+            {inPhotos.map((f) => {
+              const p = people.find((x) => x.id === f.personId);
+              return (
+                <PressableScale
+                  key={f.id}
+                  scaleTo={0.92}
+                  style={{ alignItems: 'center', width: 58 }}
+                  onPress={() => (p ? router.push(`/person/${p.id}`) : router.push({ pathname: '/faces', params: { face: f.id } }))}
+                >
+                  <FaceBubble crop={f.crop} size={44} ring={p ? undefined : c.text} />
+                  <Text style={[monoText(p ? c.text : c.muted, 10.5), { marginTop: 5 }]} numberOfLines={1}>
+                    {p ? p.name : 'quem é?'}
+                  </Text>
+                </PressableScale>
+              );
+            })}
           </Animated.View>
         )}
 
@@ -100,6 +123,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 const styles = StyleSheet.create({
   photos: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 18 },
+  faces: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 14 },
   photo: { width: '48.5%', aspectRatio: 0.82, borderRadius: radius.sm },
   meta: { marginTop: 26, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 6 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 11 },

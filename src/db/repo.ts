@@ -1,4 +1,4 @@
-import { Moment, Person, Profile, Story } from '../types';
+import { Face, FaceStatus, Moment, Person, Profile, Story } from '../types';
 import { Db } from './types';
 
 /** Tudo que o app guarda. */
@@ -7,7 +7,33 @@ export interface Snapshot {
   moments: Moment[];
   stories: Story[];
   people: Person[];
+  faces?: Face[];
 }
+
+type FaceRow = {
+  id: string;
+  moment_id: string;
+  photo: string;
+  crop: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  person_id: string | null;
+  status: FaceStatus;
+  created_at: string;
+};
+
+const rowToFace = (r: FaceRow): Face => ({
+  id: r.id,
+  momentId: r.moment_id,
+  photo: r.photo,
+  crop: r.crop,
+  box: { x: r.x, y: r.y, w: r.w, h: r.h },
+  ...(r.person_id ? { personId: r.person_id } : {}),
+  status: r.status,
+  createdAt: r.created_at,
+});
 
 type MomentRow = {
   id: string;
@@ -22,6 +48,7 @@ type MomentRow = {
   companion_comment: string | null;
   comment_pending: number;
   comment_at: string | null;
+  faces_scanned?: number;
 };
 
 export function rowToMoment(r: MomentRow, people: string[]): Moment {
@@ -41,13 +68,14 @@ export function rowToMoment(r: MomentRow, people: string[]): Moment {
     companionComment: r.companion_comment ?? undefined,
     commentPending: !!r.comment_pending,
     commentAt: r.comment_at ?? undefined,
+    ...(r.faces_scanned ? { facesScanned: true } : {}),
   };
 }
 
 // ---------- leitura ----------
 
 export async function loadAll(db: Db): Promise<Snapshot> {
-  const [settings, storyRows, peopleRows, momentRows, links] = await Promise.all([
+  const [settings, storyRows, peopleRows, momentRows, links, faceRows] = await Promise.all([
     db.getFirstAsync<{ value: string }>("SELECT value FROM settings WHERE key = 'profile'"),
     db.getAllAsync<{ id: string; title: string; category: string; year: number; body: string | null; updated_at: string }>(
       'SELECT * FROM stories ORDER BY updated_at DESC',
@@ -55,6 +83,7 @@ export async function loadAll(db: Db): Promise<Snapshot> {
     db.getAllAsync<{ id: string; name: string; photo: string | null; note: string | null }>('SELECT * FROM people ORDER BY rowid'),
     db.getAllAsync<MomentRow>('SELECT * FROM moments ORDER BY date DESC'),
     db.getAllAsync<{ moment_id: string; person_id: string }>('SELECT moment_id, person_id FROM moment_people'),
+    db.getAllAsync<FaceRow>('SELECT * FROM faces ORDER BY created_at DESC, rowid'),
   ]);
 
   const byMoment = new Map<string, string[]>();
@@ -71,6 +100,7 @@ export async function loadAll(db: Db): Promise<Snapshot> {
     people: peopleRows.map((p) => ({ id: p.id, name: p.name, photo: p.photo ?? undefined, note: p.note ?? undefined })),
     // um comentário que ficou "escrevendo" quando o app fechou não vai mais chegar
     moments: momentRows.map((r) => ({ ...rowToMoment(r, byMoment.get(r.id) ?? []), commentPending: false })),
+    faces: faceRows.map(rowToFace),
   };
 }
 
@@ -104,15 +134,15 @@ export async function upsertPerson(db: Db, p: Person) {
 /** Grava o moment e as pessoas marcadas (sem abrir transação). */
 async function writeMoment(db: Db, m: Moment) {
   await db.runAsync(
-      `INSERT INTO moments (id, title, text, photos, place_name, place_lat, place_lng, date, story_id, companion_comment, comment_pending, comment_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO moments (id, title, text, photos, place_name, place_lat, place_lng, date, story_id, companion_comment, comment_pending, comment_at, faces_scanned)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET title = excluded.title, text = excluded.text, photos = excluded.photos,
          place_name = excluded.place_name, place_lat = excluded.place_lat, place_lng = excluded.place_lng,
          date = excluded.date, story_id = excluded.story_id, companion_comment = excluded.companion_comment,
-         comment_pending = excluded.comment_pending, comment_at = excluded.comment_at`,
+         comment_pending = excluded.comment_pending, comment_at = excluded.comment_at, faces_scanned = excluded.faces_scanned`,
       m.id, m.title, m.text, JSON.stringify(m.photos),
       m.place?.name ?? null, m.place?.latitude ?? null, m.place?.longitude ?? null,
-      m.date, m.storyId ?? null, m.companionComment ?? null, m.commentPending ? 1 : 0, m.commentAt ?? null,
+      m.date, m.storyId ?? null, m.companionComment ?? null, m.commentPending ? 1 : 0, m.commentAt ?? null, m.facesScanned ? 1 : 0,
   );
   await db.runAsync('DELETE FROM moment_people WHERE moment_id = ?', m.id);
   for (const pid of m.people) {
@@ -130,7 +160,42 @@ export async function deleteMoment(db: Db, id: string) {
 
 export async function wipe(db: Db) {
   await db.withTransactionAsync(async () => {
-    await db.execAsync('DELETE FROM moment_people; DELETE FROM moments; DELETE FROM people; DELETE FROM stories; DELETE FROM settings;');
+    await db.execAsync('DELETE FROM faces; DELETE FROM moment_people; DELETE FROM moments; DELETE FROM people; DELETE FROM stories; DELETE FROM settings;');
+  });
+}
+
+// ---------- rostos ----------
+
+/** Guarda os rostos de um moment e marca o moment como já verificado. */
+export async function addFaces(db: Db, momentId: string, faces: Face[]) {
+  await db.withTransactionAsync(async () => {
+    for (const f of faces) {
+      await db.runAsync(
+        `INSERT OR REPLACE INTO faces (id, moment_id, photo, crop, x, y, w, h, person_id, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        f.id, momentId, f.photo, f.crop, f.box.x, f.box.y, f.box.w, f.box.h, f.personId ?? null, f.status, f.createdAt,
+      );
+    }
+    await db.runAsync('UPDATE moments SET faces_scanned = 1 WHERE id = ?', momentId);
+  });
+}
+
+/** Muda de quem é o rosto (alguém, você, ninguém ou "sem nome"). */
+export async function updateFace(db: Db, f: Pick<Face, 'id' | 'personId' | 'status'>) {
+  await db.runAsync('UPDATE faces SET person_id = ?, status = ? WHERE id = ?', f.personId ?? null, f.status, f.id);
+}
+
+/**
+ * Junta duas pessoas que são a mesma (ex.: "Bia" e "Beatriz"): marcações e
+ * rostos de `fromId` passam para `intoId`, que herda a foto se não tiver.
+ */
+export async function mergePeople(db: Db, fromId: string, intoId: string) {
+  if (fromId === intoId) return;
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('INSERT OR IGNORE INTO moment_people (moment_id, person_id) SELECT moment_id, ? FROM moment_people WHERE person_id = ?', intoId, fromId);
+    await db.runAsync('UPDATE faces SET person_id = ? WHERE person_id = ?', intoId, fromId);
+    await db.runAsync('UPDATE people SET photo = COALESCE(photo, (SELECT photo FROM people WHERE id = ?)) WHERE id = ?', fromId, intoId);
+    await db.runAsync('DELETE FROM people WHERE id = ?', fromId);
   });
 }
 

@@ -20,6 +20,24 @@ export interface Moment {
   companionComment?: string;
   commentPending?: boolean; // a Lumi está escrevendo o comentário
   commentAt?: string; // quando o comentário chegou (anima só os recentes)
+  facesScanned?: boolean; // já procuramos rostos nas fotos deste moment
+}
+
+/**
+ * Um rosto encontrado numa foto (detecção feita no aparelho).
+ * `status`: new = ainda sem nome · person = é alguém (personId) · me = é você · ignored = não é ninguém
+ */
+export type FaceStatus = 'new' | 'person' | 'me' | 'ignored';
+
+export interface Face {
+  id: string;
+  momentId: string;
+  photo: string; // foto de onde saiu
+  crop: string; // recorte quadrado do rosto (caminho relativo, ver src/photos.ts)
+  box: { x: number; y: number; w: number; h: number }; // posição na foto, de 0 a 1
+  personId?: string;
+  status: FaceStatus;
+  createdAt: string;
 }
 
 export interface Story {
@@ -51,6 +69,7 @@ export interface Profile {
   voice: boolean;
   haptics: boolean;
   showBuddy: boolean;
+  faces: boolean; // procurar rostos nas fotos (no aparelho)
   reminder: Reminder;
   plus: boolean;
   commentsUsed: number;

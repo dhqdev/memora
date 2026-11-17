@@ -4,7 +4,9 @@ import React, { useMemo } from 'react';
 import { ScrollView, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PersonAvatar } from '@/components/PersonAvatar';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { rankPeople } from '@/faces/logic';
 import { Avatar, IconButton, Label, OutlineButton, PressableScale, monoText } from '@/components/ui';
 import { photoUri } from '@/photos';
 import { useStore } from '@/store';
@@ -14,7 +16,8 @@ import { body, display, F, heading, useTheme } from '@/theme';
 export default function ProfileScreen() {
   const c = useTheme();
   const { width } = useWindowDimensions();
-  const { profile, moments, stories, people } = useStore();
+  const { profile, moments, stories, people, faces } = useStore();
+  const ranked = useMemo(() => rankPeople(people, moments, faces), [people, moments, faces]);
   const tile = (width - 40 - 4) / 3;
 
   const sorted = useMemo(() => [...moments].sort((a, b) => +new Date(b.date) - +new Date(a.date)), [moments]);
@@ -69,11 +72,9 @@ export default function ProfileScreen() {
           <>
             <Label style={{ marginTop: 28, marginBottom: 12 }}>Suas pessoas</Label>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 14 }}>
-              {people.map((p) => (
+              {ranked.map((p) => (
                 <PressableScale key={p.id} onPress={() => router.push(`/person/${p.id}`)} style={{ alignItems: 'center' }}>
-                  <Avatar name={p.name} size={56}>
-                    {p.photo ? <Image source={{ uri: photoUri(p.photo) }} style={StyleSheet.absoluteFill} /> : undefined}
-                  </Avatar>
+                  <PersonAvatar person={p} size={56} />
                   <Text style={{ color: c.text, fontFamily: F.medium, fontSize: 12, marginTop: 6 }}>{p.name}</Text>
                 </PressableScale>
               ))}

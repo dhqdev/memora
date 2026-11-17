@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SQLite from 'expo-sqlite';
-import { Moment, Person, Profile, Story } from '../types';
+import { Face, Moment, Person, Profile, Story } from '../types';
 import * as repo from './repo';
 import { migrate } from './schema';
 import { Db } from './types';
@@ -58,5 +58,8 @@ export const persistence = {
   upsertStory: (s: Story) => write((db) => repo.upsertStory(db, s)),
   deleteStory: (id: string) => write((db) => repo.deleteStory(db, id)),
   upsertPerson: (p: Person) => write((db) => repo.upsertPerson(db, p)),
+  addFaces: (momentId: string, faces: Face[]) => write((db) => repo.addFaces(db, momentId, faces)),
+  updateFace: (f: Face) => write((db) => repo.updateFace(db, f)),
+  mergePeople: (fromId: string, intoId: string) => write((db) => repo.mergePeople(db, fromId, intoId)),
   wipe: () => write((db) => repo.wipe(db)),
 };

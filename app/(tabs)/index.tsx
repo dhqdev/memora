@@ -4,8 +4,10 @@ import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { LumiFace } from '@/components/Lumi';
+import { FaceBubble, PersonAvatar } from '@/components/PersonAvatar';
 import { SpeechBubble } from '@/components/SpeechBubble';
-import { Avatar, Label, MentionText, PressableScale, PrimaryButton, TypingBubble, monoText } from '@/components/ui';
+import { Label, MentionText, PressableScale, PrimaryButton, TypingBubble, monoText } from '@/components/ui';
+import { rankPeople, unnamedFaces } from '@/faces/logic';
 import { isFresh, monthLabel, WEEKDAYS_SHORT } from '@/format';
 import { photoUri } from '@/photos';
 import { useStore } from '@/store';
@@ -14,7 +16,10 @@ import { Moment } from '@/types';
 
 export default function MomentsTab() {
   const c = useTheme();
-  const { moments, people, stories, profile } = useStore();
+  const { moments, people, stories, profile, faces } = useStore();
+  // bolinhas: quem mais aparece nas fotos e nas @menções vem primeiro
+  const ranked = useMemo(() => rankPeople(people, moments, faces), [people, moments, faces]);
+  const waiting = useMemo(() => (profile.faces ? unnamedFaces(faces, moments) : []), [profile.faces, faces, moments]);
 
   const groups = useMemo(() => {
     const sorted = [...moments].sort((a, b) => +new Date(b.date) - +new Date(a.date));
@@ -42,17 +47,30 @@ export default function MomentsTab() {
 
   return (
     <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 140 }}>
-      {people.length > 0 && (
+      {(ranked.length > 0 || waiting.length > 0) && (
         <Animated.View entering={FadeIn.duration(300)}>
           <Label style={{ marginBottom: 12 }}>Pessoas</Label>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 28, marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20 }}>
-            {people.map((p) => (
-              <PressableScale key={p.id} style={styles.person} onPress={() => router.push(`/person/${p.id}`)}>
-                <Avatar name={p.name} size={56}>
-                  {p.photo ? <Image source={{ uri: photoUri(p.photo) }} style={StyleSheet.absoluteFill} /> : undefined}
-                </Avatar>
-                <Text style={{ color: c.text, marginTop: 6, fontSize: 12, fontFamily: F.medium }}>{p.name}</Text>
+            {waiting.length > 0 && (
+              <PressableScale style={styles.person} onPress={() => router.push('/faces')} accessibilityLabel={`${waiting.length} rostos sem nome`}>
+                <View>
+                  <FaceBubble crop={waiting[0].crop} size={56} ring={c.text} />
+                  <View style={[styles.count, { backgroundColor: c.invert, borderColor: c.bg }]}>
+                    <Text style={{ color: c.invertText, fontSize: 11, fontFamily: F.semibold }}>{waiting.length}</Text>
+                  </View>
+                </View>
+                <Text style={{ color: c.text, marginTop: 6, fontSize: 12, fontFamily: F.semibold }}>Quem é?</Text>
               </PressableScale>
+            )}
+            {ranked.map((p) => (
+              <Animated.View key={p.id} layout={LinearTransition.duration(260)}>
+                <PressableScale style={styles.person} onPress={() => router.push(`/person/${p.id}`)}>
+                  <PersonAvatar person={p} size={56} />
+                  <Text style={{ color: c.text, marginTop: 6, fontSize: 12, fontFamily: F.medium }} numberOfLines={1}>
+                    {p.name}
+                  </Text>
+                </PressableScale>
+              </Animated.View>
             ))}
           </ScrollView>
         </Animated.View>
@@ -111,7 +129,19 @@ export default function MomentsTab() {
 
 const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  person: { alignItems: 'center', marginRight: 14 },
+  person: { alignItems: 'center', marginRight: 14, width: 60 },
+  count: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   item: { flexDirection: 'row', marginBottom: 26 },
   dayCol: { width: 44, alignItems: 'flex-start' },
   line: { width: StyleSheet.hairlineWidth * 2, flex: 1, marginLeft: 8, marginTop: 8 },

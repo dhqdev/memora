@@ -70,7 +70,7 @@ export default function NewMoment() {
     setSaving(true);
     const people = extractMentions(text).map((n) => upsertPerson(n));
     const typedTitle = title.trim();
-    const saved = await Promise.all(photos.map(persistPhoto));
+    const saved = await Promise.all(photos.map((p) => persistPhoto(p)));
     const willComment = canComment(profile);
     const moment: Moment = {
       id: uid(),

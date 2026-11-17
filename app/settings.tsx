@@ -7,6 +7,7 @@ import { LumiFace } from '@/components/Lumi';
 import { Icon } from '@/components/Icon';
 import { Avatar, OutlineButton, PressableScale, PrimaryButton, SectionTitle, Segmented, monoText } from '@/components/ui';
 import { photoUri } from '@/photos';
+import { faceDetectionAvailable } from '@/faces/mlkit';
 import { useStore } from '@/store';
 import { body, F, heading, radius, useTheme } from '@/theme';
 import { FREE_COMMENTS, Pronoun, Reminder, ThemeMode } from '@/types';
@@ -112,6 +113,17 @@ export default function Settings() {
 
       <Block title="Mostrar a Lumi" subtitle="A Lumi nas telas e nos stories">
         <Segmented value={profile.showBuddy ? 'on' : 'off'} onChange={(v) => updateProfile({ showBuddy: v === 'on' })} options={onOff} />
+      </Block>
+
+      <Block
+        title="Rostos nas fotos"
+        subtitle={
+          faceDetectionAvailable()
+            ? 'Monta as bolinhas de pessoas com os rostos das suas fotos. Feito no aparelho: nenhuma foto sai do celular.'
+            : 'Monta as bolinhas de pessoas com os rostos das suas fotos. Funciona no app instalado (não no Expo Go).'
+        }
+      >
+        <Segmented value={profile.faces ? 'on' : 'off'} onChange={(v) => updateProfile({ faces: v === 'on' })} options={onOff} />
       </Block>
 
       <Block title="Notificações" subtitle="Chegam em silêncio na Central de Notificações">

@@ -7,15 +7,16 @@ import { Directory, File, Paths } from 'expo-file-system';
  */
 const DIR = 'photos';
 
-export async function persistPhoto(uri: string): Promise<string> {
+export async function persistPhoto(uri: string, sub?: string): Promise<string> {
   try {
-    const dir = new Directory(Paths.document, DIR);
+    const folder = sub ? `${DIR}/${sub}` : DIR;
+    const dir = new Directory(Paths.document, folder);
     dir.create({ idempotent: true, intermediates: true });
     const src = new File(uri);
     const ext = (src.extension || '.jpg').replace(/^\.?/, '.');
     const name = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}${ext}`;
     await src.copy(new File(dir, name));
-    return `${DIR}/${name}`;
+    return `${folder}/${name}`;
   } catch {
     return uri; // se falhar, mantém o original (melhor que perder a foto)
   }

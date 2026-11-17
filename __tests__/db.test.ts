@@ -1,7 +1,7 @@
 /** @jest-environment node */
 import * as repo from '@/db/repo';
 import { MIGRATIONS, migrate } from '@/db/schema';
-import { Moment, Person, Profile, Story } from '@/types';
+import { Face, Moment, Person, Profile, Story } from '@/types';
 import { openMemoryDb } from './helpers/nodeDb';
 
 const profile = { onboarded: true, name: 'Ana', handle: 'ana', bio: '', pronoun: 'ela', interests: ['Amigos'], theme: 'system', voice: true, haptics: true, showBuddy: true, reminder: '21', plus: false, commentsUsed: 3 } as Profile;
@@ -30,13 +30,13 @@ describe('migrações', () => {
     const v = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
     expect(v?.user_version).toBe(MIGRATIONS.length);
     const tables = (await db.getAllAsync<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")).map((t) => t.name);
-    expect(tables).toEqual(['moment_people', 'moments', 'people', 'settings', 'stories']);
+    expect(tables).toEqual(['faces', 'moment_people', 'moments', 'people', 'settings', 'stories']);
   });
   it('rodar de novo não faz nada', async () => {
     await expect(migrate(db)).resolves.toBe(MIGRATIONS.length);
   });
   it('banco novo começa vazio', async () => {
-    expect(await repo.loadAll(db)).toEqual({ profile: {}, moments: [], stories: [], people: [] });
+    expect(await repo.loadAll(db)).toEqual({ profile: {}, moments: [], stories: [], people: [], faces: [] });
   });
 });
 
@@ -118,7 +118,7 @@ describe('apagar', () => {
     await repo.upsertPerson(db, isa);
     await repo.upsertMoment(db, moment('m1', { storyId: 's1' }));
     await repo.wipe(db);
-    expect(await repo.loadAll(db)).toEqual({ profile: {}, moments: [], stories: [], people: [] });
+    expect(await repo.loadAll(db)).toEqual({ profile: {}, moments: [], stories: [], people: [], faces: [] });
   });
 });
 
@@ -152,5 +152,85 @@ describe('importação dos dados antigos', () => {
     expect(byId.m1.storyId).toBe('s1');
     expect(byId.m2.storyId).toBeUndefined();
     expect(s.moments).toHaveLength(2);
+  });
+});
+
+describe('rostos', () => {
+  const face = (id: string, over: Partial<Face> = {}): Face => ({
+    id,
+    momentId: 'm1',
+    photo: 'photos/a.jpg',
+    crop: `photos/faces/${id}.jpg`,
+    box: { x: 0.2, y: 0.1, w: 0.25, h: 0.3 },
+    status: 'new',
+    createdAt: '2026-11-10T12:00:00.000Z',
+    ...over,
+  });
+
+  beforeEach(async () => {
+    await repo.upsertPerson(db, isa);
+    await repo.upsertPerson(db, caio);
+    await repo.upsertMoment(db, moment('m1', { people: ['p1'] }));
+  });
+
+  it('guarda os rostos e marca o moment como verificado', async () => {
+    await repo.addFaces(db, 'm1', [face('f1', { status: 'person', personId: 'p1' }), face('f2')]);
+    const s = await repo.loadAll(db);
+    expect(s.moments[0].facesScanned).toBe(true);
+    expect(s.faces).toHaveLength(2);
+    expect(s.faces!.find((f) => f.id === 'f1')).toEqual(face('f1', { status: 'person', personId: 'p1' }));
+  });
+
+  it('moment sem rosto também fica marcado (não procura de novo)', async () => {
+    await repo.addFaces(db, 'm1', []);
+    expect((await repo.loadAll(db)).moments[0].facesScanned).toBe(true);
+  });
+
+  it('salvar o moment de novo não desmarca a verificação', async () => {
+    await repo.addFaces(db, 'm1', [face('f1')]);
+    await repo.upsertMoment(db, moment('m1', { people: ['p1'], title: 'Outro título', facesScanned: true }));
+    expect((await repo.loadAll(db)).moments[0].facesScanned).toBe(true);
+  });
+
+  it('dar nome a um rosto', async () => {
+    await repo.addFaces(db, 'm1', [face('f1')]);
+    await repo.updateFace(db, { id: 'f1', status: 'person', personId: 'p2' });
+    expect((await repo.loadAll(db)).faces![0]).toMatchObject({ status: 'person', personId: 'p2' });
+    await repo.updateFace(db, { id: 'f1', status: 'me' });
+    const f = (await repo.loadAll(db)).faces![0];
+    expect(f.status).toBe('me');
+    expect(f.personId).toBeUndefined();
+  });
+
+  it('status inválido é recusado pelo banco', async () => {
+    await expect(repo.addFaces(db, 'm1', [face('f1', { status: 'talvez' as Face['status'] })])).rejects.toThrow();
+  });
+
+  it('apagar o moment apaga os rostos dele', async () => {
+    await repo.addFaces(db, 'm1', [face('f1'), face('f2')]);
+    await repo.deleteMoment(db, 'm1');
+    expect((await repo.loadAll(db)).faces).toEqual([]);
+  });
+
+  it('juntar pessoas leva marcações, rostos e a foto', async () => {
+    await repo.upsertPerson(db, { id: 'p3', name: 'Beatriz', photo: 'photos/faces/bia.jpg' });
+    await repo.upsertMoment(db, moment('m2', { people: ['p3', 'p1'] }));
+    await repo.upsertMoment(db, moment('m3', { people: ['p3'] }));
+    await repo.addFaces(db, 'm3', [face('f3', { momentId: 'm3', status: 'person', personId: 'p3' })]);
+
+    await repo.mergePeople(db, 'p3', 'p1');
+    const s = await repo.loadAll(db);
+    expect(s.people.map((p) => p.id)).toEqual(['p1', 'p2']);
+    expect(s.people[0].photo).toBe('photos/faces/bia.jpg');
+    const byId = Object.fromEntries(s.moments.map((m) => [m.id, m.people]));
+    expect(byId.m2).toEqual(['p1']);
+    expect(byId.m3).toEqual(['p1']);
+    expect(s.faces![0].personId).toBe('p1');
+  });
+
+  it('wipe apaga os rostos', async () => {
+    await repo.addFaces(db, 'm1', [face('f1')]);
+    await repo.wipe(db);
+    expect((await repo.loadAll(db)).faces).toEqual([]);
   });
 });

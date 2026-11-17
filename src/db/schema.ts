@@ -53,6 +53,26 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX moment_people_person ON moment_people(person_id);
   `,
+
+  // 2 — rostos encontrados nas fotos
+  `
+  CREATE TABLE faces (
+    id         TEXT PRIMARY KEY NOT NULL,
+    moment_id  TEXT NOT NULL REFERENCES moments(id) ON DELETE CASCADE,
+    photo      TEXT NOT NULL,
+    crop       TEXT NOT NULL,
+    x          REAL NOT NULL,
+    y          REAL NOT NULL,
+    w          REAL NOT NULL,
+    h          REAL NOT NULL,
+    person_id  TEXT REFERENCES people(id) ON DELETE SET NULL,
+    status     TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'person', 'me', 'ignored')),
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX faces_moment ON faces(moment_id);
+  CREATE INDEX faces_person ON faces(person_id);
+  ALTER TABLE moments ADD COLUMN faces_scanned INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 export async function migrate(db: Db): Promise<number> {

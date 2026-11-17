@@ -13,6 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { Platform, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFaceScanner } from '@/faces/useFaceScanner';
 import { syncReminders } from '@/reminders';
 import { StoreProvider, useStore } from '@/store';
 import { dark, light, useTheme } from '@/theme';
@@ -36,6 +37,9 @@ function Root() {
   useEffect(() => {
     if (ready && Platform.OS !== 'web') syncReminders(profile.reminder, profile.name, moments);
   }, [ready, profile.reminder, profile.name, moments]);
+
+  // Rostos nas fotos: procura em segundo plano, no aparelho.
+  useFaceScanner();
 
   // Fundo liso enquanto carrega: emenda com o splash, sem "piscar".
   if (!ready || !fontsLoaded) return <View style={{ flex: 1, backgroundColor: scheme === 'light' ? light.bg : dark.bg }} />;
@@ -61,6 +65,7 @@ function Root() {
         <Stack.Screen name="moment/[id]" />
         <Stack.Screen name="story/[id]" />
         <Stack.Screen name="person/[id]" />
+        <Stack.Screen name="faces" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="profile" />
         <Stack.Screen name="edit-profile" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
