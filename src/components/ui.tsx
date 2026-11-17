@@ -19,6 +19,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { F, heading, highlightFor, mono, radius, useTheme } from '../theme';
+import { Glass } from './Glass';
 import { Icon, IconName } from './Icon';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -49,35 +50,39 @@ export function PressableScale({
   );
 }
 
-/** Botão redondo de ícone (topo das telas). `filled` = preto cheio, como o +. */
+/**
+ * Botão de ícone no "tile" de vidro: bloco arredondado (Liquid Glass no iOS 26)
+ * com um círculo de traço fino dentro. `filled` = círculo creme cheio (o +).
+ * Área de toque generosa (58×50) — lei de Fitts.
+ */
 export function IconButton({
   icon,
   onPress,
   filled,
   label,
-  size = 40,
+  children,
 }: {
-  icon: IconName;
+  icon?: IconName;
   onPress: () => void;
   filled?: boolean;
   label: string;
-  size?: number;
+  children?: React.ReactNode;
 }) {
   const c = useTheme();
   return (
-    <PressableScale
-      onPress={onPress}
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      hitSlop={6}
-      scaleTo={0.9}
-      style={[
-        styles.icon,
-        { width: size, height: size, borderRadius: size / 2 },
-        filled ? { backgroundColor: c.invert } : { borderColor: c.border, borderWidth: StyleSheet.hairlineWidth * 2 },
-      ]}
-    >
-      <Icon name={icon} size={filled ? 20 : 18} color={filled ? c.invertText : c.text} />
+    <PressableScale onPress={onPress} accessibilityLabel={label} accessibilityRole="button" hitSlop={4} scaleTo={0.92}>
+      <Glass interactive style={styles.tile}>
+        <View
+          style={[
+            styles.tileCircle,
+            filled
+              ? { backgroundColor: c.invert }
+              : { borderColor: c.mode === 'dark' ? 'rgba(242,239,230,0.28)' : 'rgba(20,20,19,0.22)', borderWidth: 1 },
+          ]}
+        >
+          {children ?? (icon ? <Icon name={icon} size={filled ? 22 : 19} color={filled ? c.invertText : c.text} /> : null)}
+        </View>
+      </Glass>
     </PressableScale>
   );
 }
@@ -233,8 +238,9 @@ export function Avatar({ name, size = 56, children }: { name: string; size?: num
 
 /** Três pontinhos pulsando dentro do balão preto: a Lumi está escrevendo. */
 export function TypingBubble() {
+  const c = useTheme();
   return (
-    <View style={styles.typing} accessibilityLabel="A Lumi está escrevendo">
+    <View style={[styles.typing, { backgroundColor: c.mode === 'dark' ? '#242423' : '#141413' }]} accessibilityLabel="A Lumi está escrevendo">
       {[0, 1, 2].map((i) => (
         <TypingDot key={i} delay={i * 150} />
       ))}
@@ -255,7 +261,8 @@ function TypingDot({ delay }: { delay: number }) {
 }
 
 const styles = StyleSheet.create({
-  icon: { alignItems: 'center', justifyContent: 'center' },
+  tile: { width: 58, height: 50, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  tileCircle: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   primary: {
     height: 54,
     borderRadius: radius.pill,
@@ -274,7 +281,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   segment: { flexDirection: 'row', borderWidth: 1, borderRadius: radius.pill, padding: 4 },
-  segmentItem: { flex: 1, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  segmentItem: { flex: 1, height: 48, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -290,10 +297,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     flexDirection: 'row',
     gap: 5,
-    backgroundColor: '#141413',
     paddingHorizontal: 14,
     paddingVertical: 14,
-    borderRadius: 3,
+    borderRadius: 2,
   },
   dot: { width: 6, height: 6, backgroundColor: '#F2EFE6' },
 });

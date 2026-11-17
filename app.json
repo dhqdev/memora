@@ -8,11 +8,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F2EFE6"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.dhqdev.memora",
@@ -49,7 +44,20 @@
           "locationWhenInUsePermission": "O Memora usa sua localização para lembrar onde cada moment aconteceu."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F2EFE6",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#121212"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

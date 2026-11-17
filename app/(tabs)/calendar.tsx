@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { Glass } from '@/components/Glass';
 import { IconButton, monoText } from '@/components/ui';
 import { photoUri } from '@/photos';
 import { MONTHS, WEEKDAYS, sameDay } from '@/format';
@@ -50,17 +51,17 @@ export default function CalendarTab() {
             ))}
           </ScrollView>
         )}
-        <View style={styles.heroLabel}>
-          <Text style={[monoText('#F2EFE6', 13), { letterSpacing: 0.5 }]}>
+        <Glass style={styles.heroLabel}>
+          <Text style={display(26, c.text)}>
             {inMonth.length} moment{inMonth.length === 1 ? '' : 's'}
           </Text>
-        </View>
+        </Glass>
       </View>
 
       <View style={styles.monthRow}>
         <View>
           <Text style={monoText(c.muted, 11)}>{cursor.getFullYear()}</Text>
-          <Animated.Text key={cursor.toISOString()} entering={FadeIn.duration(260)} style={display(36, c.text)}>
+          <Animated.Text key={cursor.toISOString()} entering={FadeIn.duration(260)} style={display(40, c.text)}>
             {MONTHS[cursor.getMonth()]}
           </Animated.Text>
         </View>
@@ -104,8 +105,8 @@ export default function CalendarTab() {
 
 const styles = StyleSheet.create({
   hero: { height: 200, justifyContent: 'center', marginBottom: 24 },
-  heroImg: { width: 90, height: 120, borderRadius: 8, marginRight: 24, opacity: 0.85 },
-  heroLabel: { position: 'absolute', alignSelf: 'center', backgroundColor: '#141413', paddingHorizontal: 12, paddingVertical: 8 },
+  heroImg: { width: 92, height: 120, borderRadius: 10, marginRight: 22 },
+  heroLabel: { position: 'absolute', alignSelf: 'center', paddingHorizontal: 18, paddingVertical: 8, borderRadius: 999 },
   monthRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 },
   week: { flexDirection: 'row', marginBottom: 12 },
   weekday: { width: `${100 / 7}%`, textAlign: 'center' },

@@ -16,7 +16,8 @@ Inspiração de produto e de estilo: [OhMy! Journal](https://ohmyjournal.app/), 
 | **Moments** | Linha do tempo agrupada por mês, com fotos, lugar, story e pessoas. Marque amigos com `@nome` e uma página da pessoa é criada automaticamente. |
 | **Stories** | Capítulos por parte da vida (Dia a dia, Amigos, Família, Estudos…). A Lumi escreve e reescreve cada capítulo a partir dos seus moments. |
 | **Calendário** | Mês em grade com a miniatura de cada dia que tem moment. |
-| **Lugares** | Mapa com os moments que têm localização. |
+| **Lugares** | Mapa com pins de foto e um carrossel de vidro: deslize e o mapa voa até o lugar. |
+| **Perfil** | Foto, nome, @usuário, bio, números, suas pessoas e o grid dos seus moments. Dá pra compartilhar. |
 | **Lumi** | Botão flutuante para conversar com ela. Ela conhece seus moments recentes. |
 | **Ajustes** | Nome, pronome, tema (claro/escuro/sistema), vibração, mostrar a Lumi e lembrete da noite. |
 | **Memora+** | Paywall (anual com 7 dias grátis / mensal). No grátis: a Lumi comenta 10 moments e você tem 4 stories. *As compras ainda não estão integradas.* |
@@ -30,7 +31,9 @@ Inspiração de produto e de estilo: [OhMy! Journal](https://ohmyjournal.app/), 
 - `react-native-svg` para a Lumi (desenho original com expressões) e os ícones
 - `react-native-reanimated` para as transições (entrada dos itens, "digitando…", toque, Lumi flutuando)
 - `@shopify/react-native-skia` para o efeito pontilhado (dithering) das capas dos stories
-- Fontes Inter Tight (títulos) e Space Mono (falas e etiquetas), via `@expo-google-fonts`
+- Fontes Inter Tight (títulos), JetBrains Mono (etiquetas) e Pixelify Sans (falas da Lumi), via `@expo-google-fonts`
+- **Liquid Glass** da Apple com `expo-glass-effect` nos botões, cartões do mapa e na assinatura (no Android e iOS antigo cai para um bloco translúcido)
+- A Lumi é um retrato em traço preto e branco, em SVG (`src/components/lumiArt.ts`), com 4 humores
 - **Servidor de IA** em `server/index.mjs` (Node puro, zero dependências) chamando a API da Anthropic
 
 ## Estrutura

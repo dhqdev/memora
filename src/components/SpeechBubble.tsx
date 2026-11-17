@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useStore } from '../store';
-import { mono } from '../theme';
+import { F, useTheme } from '../theme';
 
 /**
  * Balão de fala da Lumi: texto em fonte mono aparecendo palavra por palavra,
@@ -21,6 +21,7 @@ export function SpeechBubble({
   instant?: boolean;
 }) {
   const { profile } = useStore();
+  const c = useTheme();
   const words = text.split(' ');
   const [count, setCount] = useState(instant ? words.length : 0);
   const doneRef = useRef(false);
@@ -51,7 +52,7 @@ export function SpeechBubble({
   }, [text]);
 
   return (
-    <Animated.View entering={instant ? undefined : FadeInUp.duration(260)} style={styles.bubble}>
+    <Animated.View entering={instant ? undefined : FadeInUp.duration(260)} style={[styles.bubble, { backgroundColor: c.mode === 'dark' ? '#242423' : '#141413' }]}>
       <Text style={styles.text}>
         {words.slice(0, count).join(' ')}
         <Text style={styles.ghost}>{count < words.length ? ' ' + words.slice(count).join(' ') : ''}</Text>
@@ -61,7 +62,7 @@ export function SpeechBubble({
 }
 
 const styles = StyleSheet.create({
-  bubble: { backgroundColor: '#141413', paddingVertical: 11, paddingHorizontal: 13, borderRadius: 3, maxWidth: '100%' },
-  text: { color: '#F2EFE6', fontFamily: mono, fontSize: 12.5, lineHeight: 19 },
+  bubble: { paddingVertical: 12, paddingHorizontal: 14, borderRadius: 2, maxWidth: '100%' },
+  text: { color: '#F2EFE6', fontFamily: F.pixel, fontSize: 15, lineHeight: 21, letterSpacing: 0.2 },
   ghost: { color: 'transparent' },
 });

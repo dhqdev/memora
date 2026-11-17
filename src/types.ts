@@ -41,6 +41,10 @@ export interface Person {
 export interface Profile {
   onboarded: boolean;
   name: string;
+  handle: string; // @usuario, sem o @
+  bio: string;
+  photo?: string; // caminho relativo (ver src/photos.ts)
+  joinedAt?: string;
   pronoun: Pronoun;
   interests: string[];
   theme: ThemeMode;

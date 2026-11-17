@@ -13,7 +13,14 @@ export type IconName =
   | 'camera'
   | 'image'
   | 'pin'
-  | 'send';
+  | 'send'
+  | 'sliders'
+  | 'book'
+  | 'chat'
+  | 'share'
+  | 'edit'
+  | 'grid'
+  | 'locate';
 
 /** Ícones de traço fino, desenhados em SVG (24×24). */
 export function Icon({ name, size = 20, color }: { name: IconName; size?: number; color: string }) {
@@ -56,6 +63,25 @@ export function Icon({ name, size = 20, color }: { name: IconName; size?: number
         <>
           <Path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0113 0c0 4.8-6.5 11-6.5 11z" {...s} />
           <Circle cx="12" cy="10" r="2.3" {...s} />
+        </>
+      )}
+      {name === 'sliders' && (
+        <>
+          <Path d="M4 7h2.9M11.1 7H20M4 12h8.9M17.1 12H20M4 17h3.9M12.1 17H20" {...s} strokeWidth={1.5} />
+          <Circle cx="9" cy="7" r="2.1" {...s} />
+          <Circle cx="15" cy="12" r="2.1" {...s} />
+          <Circle cx="10" cy="17" r="2.1" {...s} />
+        </>
+      )}
+      {name === 'book' && <Path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v13" {...s} />}
+      {name === 'chat' && <Path d="M5 5h14v10H10l-4 3.5V15H5z" {...s} />}
+      {name === 'share' && <Path d="M12 15V4M8 8l4-4 4 4M6 12v7h12v-7" {...s} />}
+      {name === 'edit' && <Path d="M5 19l1-4L16 5l3 3L9 18zM14 7l3 3" {...s} />}
+      {name === 'grid' && <Path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" {...s} />}
+      {name === 'locate' && (
+        <>
+          <Circle cx="12" cy="12" r="6" {...s} />
+          <Path d="M12 3v3M12 18v3M3 12h3M18 12h3" {...s} />
         </>
       )}
       {name === 'send' && <Path d="M12 19V5M6 11l6-6 6 6" {...s} strokeWidth={2.2} />}

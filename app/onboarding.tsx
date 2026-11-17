@@ -106,7 +106,7 @@ export default function Onboarding() {
         });
       }
     }
-    updateProfile({ ...draft, onboarded: true });
+    updateProfile({ ...draft, onboarded: true, joinedAt: new Date().toISOString(), handle: draft.name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '') });
     router.replace('/(tabs)');
   }
 

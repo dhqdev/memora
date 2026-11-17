@@ -7,9 +7,11 @@ const KEY = 'memora:v1';
 export const defaultProfile: Profile = {
   onboarded: false,
   name: '',
+  handle: '',
+  bio: '',
   pronoun: 'neutro',
   interests: [],
-  theme: 'light',
+  theme: 'system',
   voice: true,
   haptics: true,
   showBuddy: true,

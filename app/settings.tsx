@@ -1,9 +1,12 @@
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
-import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image } from 'expo-image';
+import React, { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LumiFace } from '@/components/Lumi';
-import { PrimaryButton, SectionTitle, Segmented, monoText } from '@/components/ui';
+import { Icon } from '@/components/Icon';
+import { Avatar, OutlineButton, PressableScale, PrimaryButton, SectionTitle, Segmented, monoText } from '@/components/ui';
+import { photoUri } from '@/photos';
 import { useStore } from '@/store';
 import { body, F, heading, radius, useTheme } from '@/theme';
 import { FREE_COMMENTS, Pronoun, Reminder, ThemeMode } from '@/types';
@@ -16,6 +19,17 @@ const onOff = [
 export default function Settings() {
   const c = useTheme();
   const { profile, updateProfile, reset } = useStore();
+  const [notif, setNotif] = useState<'granted' | 'denied' | 'undetermined'>('undetermined');
+
+  useEffect(() => {
+    Notifications.getPermissionsAsync().then((p) => setNotif(p.status)).catch(() => {});
+  }, []);
+
+  async function enableNotifications() {
+    const p = await Notifications.requestPermissionsAsync();
+    setNotif(p.status);
+    if (p.status !== 'granted') Alert.alert('Notificações desligadas', 'Você pode ativar nos Ajustes do iPhone, em Memora > Notificações.');
+  }
 
   async function setReminder(v: Reminder) {
     updateProfile({ reminder: v });
@@ -32,6 +46,17 @@ export default function Settings() {
   return (
     <ScrollView style={{ backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, paddingBottom: 80 }}>
       <View style={[styles.grabber, { backgroundColor: c.muted }]} />
+
+      <PressableScale scaleTo={0.98} onPress={() => router.push('/profile')} style={[styles.card, styles.profileCard, { backgroundColor: c.surface }]}>
+        <Avatar name={profile.name || 'M'} size={52}>
+          {profile.photo ? <Image source={{ uri: photoUri(profile.photo) }} style={StyleSheet.absoluteFill} /> : undefined}
+        </Avatar>
+        <View style={{ flex: 1 }}>
+          <Text style={heading(18, c.text)}>{profile.name || 'Seu perfil'}</Text>
+          <Text style={monoText(c.muted, 11)}>{profile.handle ? '@' + profile.handle : 'Ver e editar perfil'}</Text>
+        </View>
+        <Icon name="chevRight" size={18} color={c.muted} />
+      </PressableScale>
 
       <SectionTitle title="Assinatura" />
       <View style={[styles.card, { backgroundColor: c.surface }]}>
@@ -55,13 +80,6 @@ export default function Settings() {
           <Text style={monoText(c.muted, 11)}>Sincronização na nuvem chega em breve</Text>
         </View>
       </View>
-
-      <SectionTitle title="Seu nome" subtitle="Como a Lumi te chama" />
-      <TextInput
-        value={profile.name}
-        onChangeText={(name) => updateProfile({ name })}
-        style={[styles.input, { backgroundColor: c.surface, color: c.text }]}
-      />
 
       <Block title="Como a Lumi fala com você" subtitle="Concordância das falas e dos stories">
         <Segmented<Pronoun>
@@ -99,6 +117,16 @@ export default function Settings() {
         <Segmented value={profile.showBuddy ? 'on' : 'off'} onChange={(v) => updateProfile({ showBuddy: v === 'on' })} options={onOff} />
       </Block>
 
+      <Block title="Notificações" subtitle="Chegam em silêncio na Central de Notificações">
+        {notif === 'granted' ? (
+          <View style={[styles.okRow, { borderColor: c.border }]}>
+            <Text style={heading(15, c.text)}>Ativadas</Text>
+          </View>
+        ) : (
+          <OutlineButton title="Ativar notificações" onPress={enableNotifications} />
+        )}
+      </Block>
+
       <Block title="Lembrete da noite" subtitle="Só nos dias sem moment">
         <Segmented<Reminder>
           value={profile.reminder}
@@ -111,10 +139,17 @@ export default function Settings() {
         />
       </Block>
 
-      <SectionTitle title="Sobre" />
-      <Text style={body(14, c.muted)}>
-        A Lumi é uma IA. Ela recebe só o texto necessário para responder — fotos e localização ficam no seu aparelho.
-      </Text>
+      <View style={{ marginTop: 32 }}>
+        <SectionTitle title="Sobre" />
+        <Row
+          label="Sobre a Lumi"
+          onPress={() =>
+            Alert.alert('Sobre a Lumi', 'A Lumi é uma IA. Ela recebe só o texto necessário para responder; fotos e localização ficam no seu aparelho.')
+          }
+        />
+        <Row label="Política de privacidade" onPress={() => Alert.alert('Em breve', 'O link da política entra antes de publicar nas lojas.')} />
+        <Row label="Termos de uso" onPress={() => Alert.alert('Em breve', 'O link dos termos entra antes de publicar nas lojas.')} />
+      </View>
 
       <Pressable
         style={{ marginTop: 32 }}
@@ -131,6 +166,16 @@ export default function Settings() {
   );
 }
 
+function Row({ label, onPress }: { label: string; onPress: () => void }) {
+  const c = useTheme();
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, { borderBottomColor: c.border, opacity: pressed ? 0.6 : 1 }]}>
+      <Text style={body(16, c.text)}>{label}</Text>
+      <Icon name="chevRight" size={18} color={c.muted} />
+    </Pressable>
+  );
+}
+
 function Block({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
   return (
     <View style={{ marginTop: 28 }}>
@@ -143,5 +188,7 @@ function Block({ title, subtitle, children }: { title: string; subtitle: string;
 const styles = StyleSheet.create({
   grabber: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 20, opacity: 0.5 },
   card: { borderRadius: radius.lg, padding: 18, marginBottom: 28 },
-  input: { height: 52, borderRadius: radius.md, paddingHorizontal: 18, fontSize: 16, fontFamily: F.regular },
+  profileCard: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  okRow: { height: 48, borderRadius: radius.pill, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
 });

@@ -6,30 +6,33 @@ import {
   InterTight_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/inter-tight';
-import { SpaceMono_400Regular, SpaceMono_700Bold } from '@expo-google-fonts/space-mono';
+import { JetBrainsMono_400Regular, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
+import { PixelifySans_400Regular } from '@expo-google-fonts/pixelify-sans';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { View } from 'react-native';
+import { useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StoreProvider, useStore } from '@/store';
-import { light, useTheme } from '@/theme';
+import { dark, light, useTheme } from '@/theme';
 
 function Root() {
   const { ready } = useStore();
   const c = useTheme();
+  const scheme = useColorScheme();
   const [fontsLoaded] = useFonts({
     InterTight_400Regular,
     InterTight_500Medium,
     InterTight_600SemiBold,
     InterTight_700Bold,
     InterTight_800ExtraBold,
-    SpaceMono_400Regular,
-    SpaceMono_700Bold,
+    JetBrainsMono_400Regular,
+    JetBrainsMono_700Bold,
+    PixelifySans_400Regular,
   });
 
-  // Fundo creme liso enquanto carrega: emenda com o splash, sem "piscar".
-  if (!ready || !fontsLoaded) return <View style={{ flex: 1, backgroundColor: light.bg }} />;
+  // Fundo liso enquanto carrega: emenda com o splash, sem "piscar".
+  if (!ready || !fontsLoaded) return <View style={{ flex: 1, backgroundColor: scheme === 'light' ? light.bg : dark.bg }} />;
 
   return (
     <>
@@ -39,7 +42,7 @@ function Root() {
           headerShown: false,
           contentStyle: { backgroundColor: c.bg },
           animation: 'slide_from_right',
-          animationDuration: 320,
+          animationDuration: 280,
         }}
       >
         <Stack.Screen name="index" options={{ animation: 'none' }} />
@@ -52,6 +55,8 @@ function Root() {
         <Stack.Screen name="moment/[id]" />
         <Stack.Screen name="story/[id]" />
         <Stack.Screen name="person/[id]" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="edit-profile" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );
