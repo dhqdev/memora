@@ -31,7 +31,15 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScreenHeader label="Perfil" right={<IconButton icon="share" label="Compartilhar perfil" onPress={share} />} />
+      <ScreenHeader
+        label="Perfil"
+        right={
+          <>
+            <IconButton icon="share" label="Compartilhar perfil" onPress={share} />
+            <IconButton icon="sliders" label="Ajustes" onPress={() => router.push('/settings')} />
+          </>
+        }
+      />
       <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 60 }}>
         <Animated.View entering={FadeInDown.duration(320)} style={styles.head}>
           <PressableScale scaleTo={0.95} onPress={() => router.push('/edit-profile')} accessibilityLabel="Editar foto">

@@ -1,12 +1,14 @@
+import { BlurView } from 'expo-blur';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import React from 'react';
-import { StyleProp, View, ViewStyle } from 'react-native';
+import { Platform, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { useTheme } from '../theme';
 
 /**
  * Liquid Glass da Apple (iOS 26+) via expo-glass-effect.
- * Onde não existe (Android, iOS antigo, web), cai para um bloco cinza
- * translúcido com a mesma forma — o visual dos "tiles" do app.
+ * No iOS antigo cai para um desfoque de verdade (expo-blur) com o mesmo
+ * cinza dos "tiles"; no Android e na web, um bloco translúcido com a mesma forma
+ * (desfoque no Android custa caro e quase não aparece sobre fundo liso).
  */
 const HAS_GLASS = (() => {
   try {
@@ -28,6 +30,8 @@ export function Glass({
   tint?: string;
 }) {
   const c = useTheme();
+  const veil = c.mode === 'dark' ? 'rgba(92,92,88,0.72)' : 'rgba(20,20,19,0.08)';
+
   if (HAS_GLASS) {
     return (
       <GlassView
@@ -41,5 +45,16 @@ export function Glass({
       </GlassView>
     );
   }
-  return <View style={[{ backgroundColor: c.mode === 'dark' ? 'rgba(92,92,88,0.72)' : 'rgba(20,20,19,0.08)' }, style]}>{children}</View>;
+
+  if (Platform.OS === 'ios') {
+    return (
+      <BlurView intensity={40} tint={c.mode} style={[{ overflow: 'hidden' }, style]}>
+        {/* o véu cinza por cima do desfoque deixa o tile com a mesma cor do vidro */}
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: tint ?? veil, opacity: 0.82 }]} />
+        {children}
+      </BlurView>
+    );
+  }
+
+  return <View style={[{ backgroundColor: tint ?? veil }, style]}>{children}</View>;
 }

@@ -1,16 +1,19 @@
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { chat } from '@/ai';
 import { LumiFace } from '@/components/Lumi';
 import { SpeechBubble } from '@/components/SpeechBubble';
-import { IconButton, PrimaryButton, TypingBubble, monoText } from '@/components/ui';
+import { Chip, IconButton, PrimaryButton, TypingBubble, monoText } from '@/components/ui';
 import { useStore } from '@/store';
 import { body, heading, radius, useTheme } from '@/theme';
 
 type Msg = { role: 'user' | 'lumi'; text: string };
+
+/** Puxadas de assunto para quem não sabe por onde começar. */
+const STARTERS = ['O que eu fiz essa semana?', 'Me lembra um dia feliz', 'Com quem eu mais saio?', 'Me dá uma ideia de moment pra hoje'];
 
 /** Conversa livre com a Lumi — ela conhece seus moments recentes. */
 export default function LumiChat() {
@@ -23,9 +26,9 @@ export default function LumiChat() {
   const [busy, setBusy] = useState(false);
   const scroll = useRef<ScrollViewInstance>(null);
 
-  async function send() {
-    const text = input.trim();
-    if (!text) return;
+  async function send(typed?: string) {
+    const text = (typed ?? input).trim();
+    if (!text || busy) return;
     const history: Msg[] = [...msgs, { role: 'user', text }];
     setMsgs(history);
     setInput('');
@@ -67,6 +70,13 @@ export default function LumiChat() {
               <TypingBubble />
             </Animated.View>
           )}
+          {msgs.length === 1 && !busy && (
+            <Animated.View entering={FadeInDown.duration(320).delay(700)} exiting={FadeOut.duration(150)} style={styles.starters}>
+              {STARTERS.map((t) => (
+                <Chip key={t} label={t} onPress={() => send(t)} />
+              ))}
+            </Animated.View>
+          )}
         </ScrollView>
 
         <View style={[styles.bar, { borderTopColor: c.border }]}>
@@ -76,10 +86,10 @@ export default function LumiChat() {
             placeholder="Fale com a Lumi…"
             placeholderTextColor={c.muted}
             style={[styles.input, { backgroundColor: c.surface, color: c.text }]}
-            onSubmitEditing={send}
+            onSubmitEditing={() => send()}
             returnKeyType="send"
           />
-          <PrimaryButton title="" icon="send" onPress={send} disabled={!input.trim() || busy} style={{ width: 50, height: 50, paddingHorizontal: 0 }} />
+          <PrimaryButton title="" icon="send" onPress={() => send()} disabled={!input.trim() || busy} style={{ width: 50, height: 50, paddingHorizontal: 0 }} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -90,5 +100,6 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8 },
   me: { alignSelf: 'flex-end', paddingVertical: 10, paddingHorizontal: 14, borderRadius: radius.md, marginBottom: 10, maxWidth: '80%' },
   bar: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
+  starters: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 14 },
   input: { flex: 1, height: 50, borderRadius: radius.pill, paddingHorizontal: 18, fontSize: 15 },
 });

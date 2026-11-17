@@ -18,6 +18,9 @@ import { syncReminders } from '@/reminders';
 import { StoreProvider, useStore } from '@/store';
 import { dark, light, useTheme } from '@/theme';
 
+/** Transição de "entrar" numa tela (moment, story, pessoa, perfil). */
+const PUSH = Platform.OS === 'ios' ? 'default' : 'ios_from_right';
+
 function Root() {
   const { ready, profile, moments } = useStore();
   const c = useTheme();
@@ -51,8 +54,10 @@ function Root() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: c.bg },
-          animation: 'slide_from_right',
-          animationDuration: 280,
+          // iOS: o empurrão nativo (com a tela de trás andando um pouco e voltar
+          // arrastando de qualquer ponto). Android: a mesma coreografia do iOS.
+          animation: PUSH,
+          fullScreenGestureEnabled: true,
         }}
       >
         <Stack.Screen name="index" options={{ animation: 'none' }} />
@@ -62,6 +67,15 @@ function Root() {
         <Stack.Screen name="settings" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="paywall" options={{ presentation: 'fullScreenModal', animation: 'fade_from_bottom' }} />
         <Stack.Screen name="lumi" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        {/* busca e fotos abrem por cima da tela atual, só com um fade */}
+        <Stack.Screen
+          name="search"
+          options={{ presentation: 'transparentModal', animation: 'fade', animationDuration: 200, contentStyle: { backgroundColor: 'transparent' } }}
+        />
+        <Stack.Screen
+          name="viewer"
+          options={{ presentation: 'transparentModal', animation: 'fade', animationDuration: 220, contentStyle: { backgroundColor: 'transparent' } }}
+        />
         <Stack.Screen name="moment/[id]" />
         <Stack.Screen name="story/[id]" />
         <Stack.Screen name="person/[id]" />

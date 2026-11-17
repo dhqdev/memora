@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { DitherImage } from '@/components/DitherImage';
+import { popIn } from '@/components/motion';
 import { Icon } from '@/components/Icon';
 import { Chip, Label, PressableScale, monoText } from '@/components/ui';
 import { photoUri } from '@/photos';
@@ -79,11 +80,7 @@ export default function StoriesTab() {
                   </PressableScale>
                 </Animated.View>
               ) : (
-                <Animated.View
-                  key={cell.story.id}
-                  entering={FadeInDown.duration(360).delay(Math.min(i, 6) * 60)}
-                  layout={LinearTransition}
-                >
+                <Animated.View key={cell.story.id} entering={popIn(Math.min(i, 6) * 60, 440)} layout={LinearTransition}>
                   <StoryCard story={cell.story} width={colW} height={h} count={moments.filter((m) => m.storyId === cell.story.id).length} cover={moments.find((m) => m.storyId === cell.story.id && m.photos[0])?.photos[0]} />
                 </Animated.View>
               ),
@@ -124,7 +121,7 @@ function StoryCard({ story, width, height, count, cover }: { story: Story; width
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.md, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  card: { borderRadius: 18, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   newCard: { borderWidth: 1.2, borderStyle: 'dashed' },
   plus: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   badge: { position: 'absolute', top: 10, left: 10, backgroundColor: '#F2EFE6', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999 },
