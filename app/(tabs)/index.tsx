@@ -199,7 +199,7 @@ function Composer() {
       <PressableScale scaleTo={0.98} onPress={() => router.push('/new-moment')} style={[styles.composer, { backgroundColor: c.surface, borderColor: c.border }]}>
         {profile.showBuddy ? <LumiFace size={36} mood="happy" /> : <Icon name="edit" size={20} color={c.muted} />}
         <Text style={[body(15, c.muted), { flex: 1 }]} numberOfLines={1}>
-          Como foi hoje? Escreva uma linha…
+          Como foi hoje? Conta aqui…
         </Text>
         <Pressable
           onPress={() => router.push({ pathname: '/new-moment', params: { camera: '1' } })}
