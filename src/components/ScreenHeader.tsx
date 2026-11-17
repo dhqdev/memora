@@ -1,16 +1,15 @@
 import { router } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '../theme';
-import { SquareButton, monoText } from './ui';
+import { StyleSheet, View } from 'react-native';
+import { IconButton, Label } from './ui';
 
+/** Topo das telas internas: voltar · etiqueta mono · ação opcional. */
 export function ScreenHeader({ label, right }: { label: string; right?: React.ReactNode }) {
-  const c = useTheme();
   return (
     <View style={styles.row}>
-      <SquareButton icon="←" label="Voltar" onPress={() => router.back()} />
-      <Text style={monoText(c.muted, 12)}>{label}</Text>
-      <View style={{ minWidth: 58, alignItems: 'flex-end' }}>{right}</View>
+      <IconButton icon="back" label="Voltar" onPress={() => router.back()} />
+      <Label>{label}</Label>
+      <View style={{ minWidth: 40, alignItems: 'flex-end' }}>{right}</View>
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useStore } from '../store';
 import { mono } from '../theme';
 
@@ -50,17 +51,17 @@ export function SpeechBubble({
   }, [text]);
 
   return (
-    <View style={styles.bubble}>
+    <Animated.View entering={instant ? undefined : FadeInUp.duration(260)} style={styles.bubble}>
       <Text style={styles.text}>
         {words.slice(0, count).join(' ')}
         <Text style={styles.ghost}>{count < words.length ? ' ' + words.slice(count).join(' ') : ''}</Text>
       </Text>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  bubble: { backgroundColor: '#161616', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 4, maxWidth: '100%' },
-  text: { color: '#F2EFE6', fontFamily: mono, fontSize: 14, lineHeight: 21 },
+  bubble: { backgroundColor: '#141413', paddingVertical: 11, paddingHorizontal: 13, borderRadius: 3, maxWidth: '100%' },
+  text: { color: '#F2EFE6', fontFamily: mono, fontSize: 12.5, lineHeight: 19 },
   ghost: { color: 'transparent' },
 });

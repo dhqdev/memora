@@ -1,15 +1,17 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { writeStory } from '@/ai';
 import { LumiFace } from '@/components/Lumi';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { OutlineButton, monoText } from '@/components/ui';
+import { Label, OutlineButton, PressableScale, TypingBubble, monoText } from '@/components/ui';
+import { photoUri } from '@/photos';
 import { MONTHS_SHORT } from '@/format';
 import { useStore } from '@/store';
-import { mono, radius, useTheme } from '@/theme';
+import { body, display, heading, mono, radius, useTheme } from '@/theme';
 
 export default function StoryDetail() {
   const c = useTheme();
@@ -32,21 +34,25 @@ export default function StoryDetail() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScreenHeader label="STORY" />
+      <ScreenHeader label="Story" />
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
-        <Text style={monoText(c.muted)}>
+        <Animated.View entering={FadeInDown.duration(380)}>
+        <Text style={monoText(c.muted, 11)}>
           {story.year} · {list.length} moment{list.length === 1 ? '' : 's'}, escrito pela Lumi ✦
         </Text>
         <View style={[styles.tag, { borderColor: c.text }]}>
           <Text style={{ fontFamily: mono, fontSize: 11, color: c.text, letterSpacing: 1 }}>{story.category.toUpperCase()}</Text>
         </View>
-        <Text style={{ color: c.text, fontSize: 32, fontWeight: '500', marginTop: 8 }}>{story.title}</Text>
+        <Text style={[display(30, c.text), { marginTop: 8 }]}>{story.title}</Text>
+        </Animated.View>
 
         <View style={{ marginTop: 18 }}>
           {story.body ? (
-            <Text style={{ color: c.text, fontSize: 17, lineHeight: 26 }}>{story.body}</Text>
+            <Animated.Text key={story.updatedAt} entering={FadeIn.duration(500)} style={body(16, c.text)}>
+              {story.body}
+            </Animated.Text>
           ) : (
-            <Text style={{ color: c.muted, fontSize: 16 }}>A Lumi ainda não escreveu esse capítulo.</Text>
+            <Text style={body(15, c.muted)}>A Lumi ainda não escreveu esse capítulo.</Text>
           )}
         </View>
 
@@ -54,35 +60,34 @@ export default function StoryDetail() {
           {writing ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <LumiFace size={40} mood="thinking" />
-              <ActivityIndicator color={c.muted} />
-              <Text style={monoText(c.muted)}>escrevendo…</Text>
+              <TypingBubble />
             </View>
           ) : (
             <OutlineButton title={story.body ? 'Pedir para a Lumi reescrever' : 'Pedir para a Lumi escrever'} onPress={rewrite} />
           )}
         </View>
 
-        <Text style={[monoText(c.muted), { marginTop: 32, marginBottom: 12 }]}>MOMENTS</Text>
+        <Label style={{ marginTop: 32, marginBottom: 12 }}>Moments</Label>
         {list.map((m) => {
           const d = new Date(m.date);
           return (
-            <Pressable key={m.id} onPress={() => router.push(`/moment/${m.id}`)} style={[styles.row, { borderColor: c.border }]}>
+            <PressableScale key={m.id} scaleTo={0.98} onPress={() => router.push(`/moment/${m.id}`)} style={[styles.row, { borderColor: c.border }]}>
               {m.photos[0] ? (
-                <Image source={{ uri: m.photos[0] }} style={styles.thumb} contentFit="cover" />
+                <Image source={{ uri: photoUri(m.photos[0]) }} style={styles.thumb} contentFit="cover" />
               ) : (
                 <View style={[styles.thumb, { backgroundColor: c.card }]} />
               )}
               <View style={{ flex: 1 }}>
-                <Text style={monoText(c.muted, 12)}>
+                <Text style={monoText(c.muted, 10.5)}>
                   {MONTHS_SHORT[d.getMonth()]} {d.getDate()}
                 </Text>
-                <Text style={{ color: c.text, fontSize: 16 }}>{m.title}</Text>
+                <Text style={heading(15, c.text)}>{m.title}</Text>
               </View>
               <Text style={{ color: c.muted }}>›</Text>
-            </Pressable>
+            </PressableScale>
           );
         })}
-        {!list.length && <Text style={{ color: c.muted }}>Escolha esse story ao salvar um moment.</Text>}
+        {!list.length && <Text style={body(14, c.muted)}>Escolha esse story ao salvar um moment.</Text>}
       </ScrollView>
     </SafeAreaView>
   );

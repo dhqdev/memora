@@ -1,6 +1,16 @@
-import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+  ZoomIn,
+} from 'react-native-reanimated';
 import Svg, { Circle, Ellipse, Path } from 'react-native-svg';
+import { PressableScale } from './ui';
 
 export type Mood = 'happy' | 'excited' | 'thinking' | 'sleepy';
 
@@ -8,7 +18,7 @@ export type Mood = 'happy' | 'excited' | 'thinking' | 'sleepy';
  * Lumi — a companheira do Memora. Um "bolinho de luz" com uma estrelinha na cabeça.
  * Desenho original, feito em SVG para trocar de expressão sem assets.
  */
-export function LumiFace({ size = 64, mood = 'happy' }: { size?: number; mood?: Mood }) {
+export function LumiFace({ size = 64, mood = 'happy', blink = false }: { size?: number; mood?: Mood; blink?: boolean }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
       <Circle cx="50" cy="50" r="48" fill="#F2EFE6" stroke="#121212" strokeWidth="3" />
@@ -20,7 +30,7 @@ export function LumiFace({ size = 64, mood = 'happy' }: { size?: number; mood?: 
       <Ellipse cx="34" cy="60" rx="5" ry="3" fill="#F19C79" opacity={0.7} />
       <Ellipse cx="66" cy="60" rx="5" ry="3" fill="#F19C79" opacity={0.7} />
       {/* olhos */}
-      {mood === 'sleepy' ? (
+      {mood === 'sleepy' || blink ? (
         <>
           <Path d="M35 52 L45 52" stroke="#121212" strokeWidth="3" strokeLinecap="round" />
           <Path d="M55 52 L65 52" stroke="#121212" strokeWidth="3" strokeLinecap="round" />
@@ -53,25 +63,47 @@ export function LumiFace({ size = 64, mood = 'happy' }: { size?: number; mood?: 
   );
 }
 
-/** Botão flutuante da Lumi (canto inferior direito), igual ao buddy do OhMy. */
+/** Botão flutuante da Lumi: flutua devagar e pisca de vez em quando. */
 export function LumiFab({ onPress }: { onPress: () => void }) {
+  const y = useSharedValue(0);
+  const [blink, setBlink] = useState(false);
+
+  useEffect(() => {
+    y.value = withRepeat(
+      withSequence(
+        withTiming(-4, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+    );
+    const id = setInterval(() => {
+      setBlink(true);
+      setTimeout(() => setBlink(false), 140);
+    }, 3800);
+    return () => clearInterval(id);
+  }, [y]);
+
+  const float = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
+
   return (
-    <Pressable onPress={onPress} style={styles.fab} accessibilityLabel="Conversar com a Lumi">
-      <View style={styles.shadow}>
-        <LumiFace size={64} />
-      </View>
-    </Pressable>
+    <Animated.View entering={ZoomIn.springify().damping(14).delay(250)} style={styles.fab}>
+      <Animated.View style={float}>
+        <PressableScale onPress={onPress} scaleTo={0.9} accessibilityLabel="Conversar com a Lumi" style={styles.shadow}>
+          <LumiFace size={62} blink={blink} />
+        </PressableScale>
+      </Animated.View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  fab: { position: 'absolute', right: 20, bottom: 36 },
+  fab: { position: 'absolute', right: 20, bottom: 34 },
   shadow: {
     borderRadius: 40,
     shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
   },
 });

@@ -18,6 +18,8 @@ export interface Moment {
   date: string; // ISO
   storyId?: string;
   companionComment?: string;
+  commentPending?: boolean; // a Lumi está escrevendo o comentário
+  commentAt?: string; // quando o comentário chegou (anima só os recentes)
 }
 
 export interface Story {

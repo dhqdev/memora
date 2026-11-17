@@ -27,7 +27,10 @@ Inspiração de produto e de estilo: [OhMy! Journal](https://ohmyjournal.app/), 
 - TypeScript
 - `AsyncStorage` para os dados locais (tudo fica no aparelho)
 - `expo-image-picker`, `expo-location`, `react-native-maps`, `expo-notifications`, `expo-haptics`
-- `react-native-svg` para a Lumi (desenho original com expressões)
+- `react-native-svg` para a Lumi (desenho original com expressões) e os ícones
+- `react-native-reanimated` para as transições (entrada dos itens, "digitando…", toque, Lumi flutuando)
+- `@shopify/react-native-skia` para o efeito pontilhado (dithering) das capas dos stories
+- Fontes Inter Tight (títulos) e Space Mono (falas e etiquetas), via `@expo-google-fonts`
 - **Servidor de IA** em `server/index.mjs` (Node puro, zero dependências) chamando a API da Anthropic
 
 ## Estrutura
@@ -123,7 +126,6 @@ Bundle IDs atuais: `com.dhqdev.memora` (ajuste em `app.json` se quiser).
 - [ ] Mais expressões da Lumi e ilustrações próprias
 - [ ] Retrospectiva do ano e cards para compartilhar
 - [ ] Busca nos moments
-- [ ] Fontes customizadas (ex.: uma grotesca para títulos + mono pixelada para as falas)
 - [ ] Ícone e splash definitivos
 
 ## Privacidade

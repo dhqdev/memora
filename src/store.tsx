@@ -9,7 +9,7 @@ export const defaultProfile: Profile = {
   name: '',
   pronoun: 'neutro',
   interests: [],
-  theme: 'system',
+  theme: 'light',
   voice: true,
   haptics: true,
   showBuddy: true,
@@ -52,7 +52,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .then((raw) => {
         if (raw) {
           const saved = JSON.parse(raw) as State;
-          setState({ ...empty, ...saved, profile: { ...defaultProfile, ...saved.profile } });
+          setState({
+            ...empty,
+            ...saved,
+            profile: { ...defaultProfile, ...saved.profile },
+            // um comentário que ficou "escrevendo" quando o app fechou não vai mais chegar
+            moments: (saved.moments ?? []).map((m) => (m.commentPending ? { ...m, commentPending: false } : m)),
+          });
         }
       })
       .finally(() => setReady(true));

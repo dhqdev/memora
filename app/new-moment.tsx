@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
@@ -16,9 +17,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { commentMoment, suggestTitle } from '@/ai';
-import { Chip, PrimaryButton, monoText } from '@/components/ui';
+import { Chip, Label, PrimaryButton, monoText } from '@/components/ui';
+import { persistPhoto } from '@/photos';
 import { uid, useStore } from '@/store';
-import { radius, useTheme } from '@/theme';
+import { body, display, F, radius, useTheme } from '@/theme';
 import { FREE_COMMENTS, Moment, Place } from '@/types';
 
 export default function NewMoment() {
@@ -65,23 +67,27 @@ export default function NewMoment() {
     const mentions = [...new Set([...text.matchAll(/@([\p{L}\d_]+)/gu)].map((m) => m[1]))];
     const people = mentions.map((n) => upsertPerson(n));
     const finalTitle = title.trim() || (await suggestTitle(text));
+    const saved = await Promise.all(photos.map(persistPhoto));
+    const willComment = profile.plus || profile.commentsUsed < FREE_COMMENTS;
     const moment: Moment = {
       id: uid(),
       title: finalTitle,
       text: text.trim(),
-      photos,
+      photos: saved,
       people: people.map((p) => p.id),
       place,
       date: new Date().toISOString(),
       storyId,
+      commentPending: willComment,
     };
     addMoment(moment);
+    if (profile.haptics) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     router.back();
 
     // A Lumi comenta em segundo plano (10 grátis, ilimitado no Memora+).
-    if (profile.plus || profile.commentsUsed < FREE_COMMENTS) {
+    if (willComment) {
       const comment = await commentMoment(moment, profile, people.map((p) => p.name));
-      updateMoment(moment.id, { companionComment: comment });
+      updateMoment(moment.id, { companionComment: comment, commentPending: false, commentAt: new Date().toISOString() });
       updateProfile({ commentsUsed: profile.commentsUsed + 1 });
     }
   }
@@ -91,22 +97,22 @@ export default function NewMoment() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
           <Pressable onPress={() => router.back()}>
-            <Text style={{ color: c.muted, fontSize: 17 }}>Cancelar</Text>
+            <Text style={{ color: c.muted, fontSize: 15, fontFamily: F.medium }}>Cancelar</Text>
           </Pressable>
-          <Text style={monoText(c.muted, 12)}>NOVO MOMENT</Text>
+          <Label>Novo moment</Label>
           <View style={{ width: 70 }} />
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
-          <Text style={monoText(c.muted)}>
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+          <Text style={monoText(c.muted, 11)}>
+            — {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </Text>
           <TextInput
             value={title}
             onChangeText={setTitle}
             placeholder="Título (a Lumi sugere se ficar vazio)"
             placeholderTextColor={c.muted}
-            style={[styles.title, { color: c.text }]}
+            style={[display(26, c.text), styles.title]}
           />
           <TextInput
             value={text}
@@ -115,7 +121,7 @@ export default function NewMoment() {
             placeholderTextColor={c.muted}
             multiline
             autoFocus
-            style={[styles.body, { color: c.text }]}
+            style={[body(16, c.text), styles.body]}
           />
 
           <ScrollView horizontal style={{ marginVertical: 12 }}>
@@ -127,14 +133,14 @@ export default function NewMoment() {
           </ScrollView>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-            <Chip label="📷 Câmera" onPress={takePhoto} />
-            <Chip label="🖼 Galeria" onPress={pickPhoto} />
-            <Chip label={locating ? 'Localizando…' : place ? `📍 ${place.name}` : '📍 Lugar'} active={!!place} onPress={addLocation} />
+            <Chip icon="camera" label="Câmera" onPress={takePhoto} />
+            <Chip icon="image" label="Galeria" onPress={pickPhoto} />
+            <Chip icon="pin" label={locating ? 'Localizando…' : place ? place.name : 'Lugar'} active={!!place} onPress={addLocation} />
           </View>
 
           {stories.length > 0 && (
             <>
-              <Text style={[monoText(c.muted), { marginTop: 18, marginBottom: 8 }]}>STORY</Text>
+              <Label style={{ marginTop: 18, marginBottom: 10 }}>Story</Label>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                 {stories.map((s) => (
                   <Chip key={s.id} label={`${s.category} · ${s.year}`} active={storyId === s.id} onPress={() => setStoryId(storyId === s.id ? undefined : s.id)} />
@@ -158,7 +164,7 @@ export default function NewMoment() {
 
 const styles = StyleSheet.create({
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
-  title: { fontSize: 30, fontWeight: '500', marginTop: 10 },
-  body: { fontSize: 18, minHeight: 100, marginTop: 10, textAlignVertical: 'top' },
-  photo: { width: 110, height: 140, borderRadius: radius.sm, marginRight: 10 },
+  title: { marginTop: 10, paddingVertical: 0 },
+  body: { minHeight: 100, marginTop: 10, textAlignVertical: 'top' },
+  photo: { width: 104, height: 128, borderRadius: radius.sm, marginRight: 8 },
 });

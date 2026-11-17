@@ -1,14 +1,17 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LumiFace } from '@/components/Lumi';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SpeechBubble } from '@/components/SpeechBubble';
-import { monoText } from '@/components/ui';
+import { Avatar, IconButton, MentionText, TypingBubble, monoText } from '@/components/ui';
+import { isFresh } from '@/format';
+import { photoUri } from '@/photos';
 import { useStore } from '@/store';
-import { radius, useTheme } from '@/theme';
+import { body, display, F, radius, useTheme } from '@/theme';
 
 export default function MomentDetail() {
   const c = useTheme();
@@ -29,55 +32,77 @@ export default function MomentDetail() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScreenHeader
-        label="MOMENT"
-        right={<Pressable onPress={remove}><Text style={{ color: c.muted, fontSize: 22 }}>⋯</Text></Pressable>}
-      />
+      <ScreenHeader label="Moment" right={<IconButton icon="more" label="Opções" onPress={remove} />} />
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
-        <Text style={monoText(c.muted)}>
-          — {date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
-        </Text>
-        <Text style={{ color: c.text, fontSize: 32, fontWeight: '500', marginTop: 10 }}>{m.title}</Text>
-        {!!m.text && <Text style={{ color: c.text, fontSize: 18, marginTop: 12, lineHeight: 26 }}>{m.text}</Text>}
+        <Animated.View entering={FadeInDown.duration(380)}>
+          <Text style={monoText(c.muted, 11)}>
+            — {date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </Text>
+          <Text style={[display(30, c.text), { marginTop: 10 }]}>{m.title}</Text>
+          {!!m.text && <MentionText text={m.text} style={[body(16, c.text), { marginTop: 10 }]} />}
+        </Animated.View>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
-          {m.photos.map((uri) => (
-            <Image key={uri} source={{ uri }} style={styles.photo} contentFit="cover" />
-          ))}
-        </View>
+        {m.photos.length > 0 && (
+          <Animated.View entering={FadeIn.duration(420).delay(120)} style={styles.photos}>
+            {m.photos.map((p) => (
+              <Image key={p} source={{ uri: photoUri(p) }} style={styles.photo} contentFit="cover" transition={250} />
+            ))}
+          </Animated.View>
+        )}
 
-        <View style={[styles.meta, { borderTopColor: c.border }]}>
-          {who.length > 0 && <Row label="Com" value={who.map((p) => p.name).join(', ')} />}
-          {m.place && <Row label="Onde" value={m.place.name} />}
-          {story && <Row label="Story" value={`${story.category} · ${story.year}`} />}
-        </View>
+        <Animated.View entering={FadeIn.duration(380).delay(200)} style={[styles.meta, { borderTopColor: c.border }]}>
+          {who.length > 0 && (
+            <Row label="Com">
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {who.map((p, i) => (
+                  <View key={p.id} style={{ marginLeft: i ? -6 : 0 }}>
+                    <Avatar name={p.name} size={22}>
+                      {p.photo ? <Image source={{ uri: photoUri(p.photo) }} style={StyleSheet.absoluteFill} /> : undefined}
+                    </Avatar>
+                  </View>
+                ))}
+                <Text style={[styles.value, { color: c.text, marginLeft: 8 }]}>{who.map((p) => p.name).join(', ')}</Text>
+              </View>
+            </Row>
+          )}
+          {m.place && <Row label="Onde"><Text style={[styles.value, { color: c.text }]}>{m.place.name}</Text></Row>}
+          {story && (
+            <Row label="Story">
+              <Text style={[styles.value, { color: c.text }]} onPress={() => router.push(`/story/${story.id}`)}>
+                {story.category} · {story.year}
+              </Text>
+            </Row>
+          )}
+        </Animated.View>
 
-        {m.companionComment && (
-          <View style={styles.lumi}>
-            <View style={{ flex: 1 }}>
-              <SpeechBubble text={m.companionComment} />
+        {(m.commentPending || m.companionComment) && (
+          <Animated.View entering={FadeInUp.duration(380).delay(280)} style={styles.lumi}>
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              {m.commentPending ? <TypingBubble /> : <SpeechBubble text={m.companionComment!} instant={!isFresh(m.commentAt, 15000)} />}
             </View>
-            <LumiFace size={58} mood="excited" />
-          </View>
+            <LumiFace size={52} mood={m.commentPending ? 'thinking' : 'excited'} />
+          </Animated.View>
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
   const c = useTheme();
   return (
     <View style={styles.row}>
-      <Text style={monoText(c.muted)}>{label}</Text>
-      <Text style={{ color: c.text, fontSize: 15 }}>{value}</Text>
+      <Text style={monoText(c.muted, 11)}>{label}</Text>
+      {children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  photo: { width: '48%', aspectRatio: 0.8, borderRadius: radius.sm },
-  meta: { marginTop: 24, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 12 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
-  lumi: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginTop: 28 },
+  photos: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 18 },
+  photo: { width: '48.5%', aspectRatio: 0.82, borderRadius: radius.sm },
+  meta: { marginTop: 26, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 6 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 11 },
+  value: { fontFamily: F.medium, fontSize: 14 },
+  lumi: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginTop: 30 },
 });

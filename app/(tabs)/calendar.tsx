@@ -2,10 +2,12 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SquareButton, monoText } from '@/components/ui';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { IconButton, monoText } from '@/components/ui';
+import { photoUri } from '@/photos';
 import { MONTHS, WEEKDAYS, sameDay } from '@/format';
 import { useStore } from '@/store';
-import { useTheme } from '@/theme';
+import { display, F, useTheme } from '@/theme';
 
 export default function CalendarTab() {
   const c = useTheme();
@@ -41,26 +43,28 @@ export default function CalendarTab() {
             {strip.map((m, i) => (
               <Image
                 key={m.id}
-                source={{ uri: m.photos[0] }}
+                source={{ uri: photoUri(m.photos[0]) }}
                 style={[styles.heroImg, { marginTop: i % 2 ? 40 : 0 }]}
                 contentFit="cover"
               />
             ))}
           </ScrollView>
         )}
-        <Text style={[styles.heroText, { color: c.text }]}>
+        <Text style={[display(30, c.text), styles.heroText]}>
           {inMonth.length} moment{inMonth.length === 1 ? '' : 's'}
         </Text>
       </View>
 
       <View style={styles.monthRow}>
         <View>
-          <Text style={monoText(c.muted, 14)}>{cursor.getFullYear()}</Text>
-          <Text style={{ color: c.text, fontSize: 40, fontWeight: '500' }}>{MONTHS[cursor.getMonth()]}</Text>
+          <Text style={monoText(c.muted, 11)}>{cursor.getFullYear()}</Text>
+          <Animated.Text key={cursor.toISOString()} entering={FadeIn.duration(260)} style={display(36, c.text)}>
+            {MONTHS[cursor.getMonth()]}
+          </Animated.Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <SquareButton icon="‹" label="Mês anterior" onPress={() => shift(-1)} />
-          <SquareButton icon="›" label="Próximo mês" onPress={() => shift(1)} />
+          <IconButton icon="chevLeft" label="Mês anterior" onPress={() => shift(-1)} />
+          <IconButton icon="chevRight" label="Próximo mês" onPress={() => shift(1)} />
         </View>
       </View>
 
@@ -82,9 +86,9 @@ export default function CalendarTab() {
               onPress={() => m && router.push(`/moment/${m.id}`)}
               style={[styles.cell, { borderColor: c.border }]}
             >
-              <Text style={{ color: c.text, fontWeight: sameDay(date, today) ? '700' : '400' }}>{day}</Text>
+              <Text style={{ color: c.text, fontSize: 12, fontFamily: sameDay(date, today) ? F.bold : F.regular }}>{day}</Text>
               {m?.photos[0] ? (
-                <Image source={{ uri: m.photos[0] }} style={styles.thumb} contentFit="cover" />
+                <Image source={{ uri: photoUri(m.photos[0]) }} style={styles.thumb} contentFit="cover" transition={200} />
               ) : m ? (
                 <View style={[styles.dot, { backgroundColor: c.accent }]} />
               ) : null}
@@ -99,7 +103,7 @@ export default function CalendarTab() {
 const styles = StyleSheet.create({
   hero: { height: 200, justifyContent: 'center', marginBottom: 24 },
   heroImg: { width: 90, height: 120, borderRadius: 8, marginRight: 24, opacity: 0.85 },
-  heroText: { position: 'absolute', alignSelf: 'center', fontSize: 34, fontWeight: '500' },
+  heroText: { position: 'absolute', alignSelf: 'center' },
   monthRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 },
   week: { flexDirection: 'row', marginBottom: 12 },
   weekday: { width: `${100 / 7}%`, textAlign: 'center' },

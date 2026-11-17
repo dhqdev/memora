@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#121212"
+      "backgroundColor": "#F2EFE6"
     },
     "ios": {
       "supportsTablet": true,
@@ -19,7 +19,8 @@
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "O Memora usa suas fotos para guardar seus moments.",
         "NSCameraUsageDescription": "O Memora usa a câmera para registrar seus moments.",
-        "NSLocationWhenInUseUsageDescription": "O Memora usa sua localização para lembrar onde cada moment aconteceu."
+        "NSLocationWhenInUseUsageDescription": "O Memora usa sua localização para lembrar onde cada moment aconteceu.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -28,20 +29,30 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#121212"
       },
-      "permissions": ["ACCESS_FINE_LOCATION", "CAMERA", "READ_MEDIA_IMAGES"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "plugins": [
       "expo-router",
       [
         "expo-image-picker",
-        { "photosPermission": "O Memora usa suas fotos para guardar seus moments." }
+        {
+          "photosPermission": "O Memora usa suas fotos para guardar seus moments."
+        }
       ],
       [
         "expo-location",
-        { "locationWhenInUsePermission": "O Memora usa sua localização para lembrar onde cada moment aconteceu." }
+        {
+          "locationWhenInUsePermission": "O Memora usa sua localização para lembrar onde cada moment aconteceu."
+        }
       ],
       "expo-notifications"
     ],
-    "experiments": { "typedRoutes": true }
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

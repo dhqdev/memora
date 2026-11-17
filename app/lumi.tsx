@@ -1,13 +1,14 @@
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
+import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { chat } from '@/ai';
 import { LumiFace } from '@/components/Lumi';
 import { SpeechBubble } from '@/components/SpeechBubble';
-import { PrimaryButton, SquareButton, monoText } from '@/components/ui';
+import { IconButton, PrimaryButton, TypingBubble, monoText } from '@/components/ui';
 import { useStore } from '@/store';
-import { radius, useTheme } from '@/theme';
+import { body, heading, radius, useTheme } from '@/theme';
 
 type Msg = { role: 'user' | 'lumi'; text: string };
 
@@ -42,11 +43,11 @@ export default function LumiChat() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <LumiFace size={44} mood={busy ? 'thinking' : 'happy'} />
             <View>
-              <Text style={{ color: c.text, fontSize: 18, fontWeight: '500' }}>Lumi</Text>
-              <Text style={monoText(c.muted, 11)}>sua companheira de memórias · IA</Text>
+              <Text style={heading(17, c.text)}>Lumi</Text>
+              <Text style={monoText(c.muted, 10.5)}>sua companheira de memórias · IA</Text>
             </View>
           </View>
-          <SquareButton icon="✕" label="Fechar" onPress={() => router.back()} />
+          <IconButton icon="close" label="Fechar" onPress={() => router.back()} />
         </View>
 
         <ScrollView ref={scroll} contentContainerStyle={{ padding: 20 }}>
@@ -56,12 +57,16 @@ export default function LumiChat() {
                 <SpeechBubble text={m.text} instant={i < msgs.length - 1} />
               </View>
             ) : (
-              <View key={i} style={[styles.me, { backgroundColor: c.card }]}>
-                <Text style={{ color: c.text, fontSize: 16 }}>{m.text}</Text>
-              </View>
+              <Animated.View key={i} entering={FadeInUp.duration(220)} style={[styles.me, { backgroundColor: c.invert }]}>
+                <Text style={body(15, c.invertText)}>{m.text}</Text>
+              </Animated.View>
             ),
           )}
-          {busy && <ActivityIndicator color={c.muted} style={{ alignSelf: 'flex-start' }} />}
+          {busy && (
+            <Animated.View entering={FadeIn.duration(200)}>
+              <TypingBubble />
+            </Animated.View>
+          )}
         </ScrollView>
 
         <View style={[styles.bar, { borderTopColor: c.border }]}>
@@ -74,7 +79,7 @@ export default function LumiChat() {
             onSubmitEditing={send}
             returnKeyType="send"
           />
-          <PrimaryButton title="↑" onPress={send} disabled={!input.trim() || busy} style={{ width: 56, height: 56, paddingHorizontal: 0 }} />
+          <PrimaryButton title="" icon="send" onPress={send} disabled={!input.trim() || busy} style={{ width: 50, height: 50, paddingHorizontal: 0 }} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -85,5 +90,5 @@ const styles = StyleSheet.create({
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8 },
   me: { alignSelf: 'flex-end', paddingVertical: 10, paddingHorizontal: 14, borderRadius: radius.md, marginBottom: 10, maxWidth: '80%' },
   bar: { flexDirection: 'row', gap: 10, padding: 16, borderTopWidth: StyleSheet.hairlineWidth },
-  input: { flex: 1, height: 56, borderRadius: radius.pill, paddingHorizontal: 20, fontSize: 16 },
+  input: { flex: 1, height: 50, borderRadius: radius.pill, paddingHorizontal: 18, fontSize: 15 },
 });

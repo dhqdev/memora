@@ -5,7 +5,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { LumiFace } from '@/components/Lumi';
 import { PrimaryButton, SectionTitle, Segmented, monoText } from '@/components/ui';
 import { useStore } from '@/store';
-import { radius, useTheme } from '@/theme';
+import { body, F, heading, radius, useTheme } from '@/theme';
 import { FREE_COMMENTS, Pronoun, Reminder, ThemeMode } from '@/types';
 
 const onOff = [
@@ -38,8 +38,8 @@ export default function Settings() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 }}>
           <LumiFace size={56} />
           <View>
-            <Text style={{ color: c.text, fontSize: 20, fontWeight: '500' }}>{profile.plus ? 'Memora+' : 'Plano gratuito'}</Text>
-            <Text style={monoText(c.muted)}>
+            <Text style={heading(18, c.text)}>{profile.plus ? 'Memora+' : 'Plano gratuito'}</Text>
+            <Text style={monoText(c.muted, 11)}>
               {profile.plus ? 'Lumi comenta todos os moments' : `${Math.min(profile.commentsUsed, FREE_COMMENTS)} de ${FREE_COMMENTS} moments com a Lumi`}
             </Text>
           </View>
@@ -51,8 +51,8 @@ export default function Settings() {
       <View style={[styles.card, { backgroundColor: c.surface, flexDirection: 'row', gap: 12, alignItems: 'center' }]}>
         <Text style={{ fontSize: 22, color: c.text }}>☁︎</Text>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: c.text, fontSize: 17 }}>Salvo neste aparelho</Text>
-          <Text style={monoText(c.muted)}>Sincronização na nuvem chega em breve</Text>
+          <Text style={heading(15, c.text)}>Salvo neste aparelho</Text>
+          <Text style={monoText(c.muted, 11)}>Sincronização na nuvem chega em breve</Text>
         </View>
       </View>
 
@@ -112,7 +112,7 @@ export default function Settings() {
       </Block>
 
       <SectionTitle title="Sobre" />
-      <Text style={{ color: c.muted, fontSize: 15, lineHeight: 22 }}>
+      <Text style={body(14, c.muted)}>
         A Lumi é uma IA. Ela recebe só o texto necessário para responder — fotos e localização ficam no seu aparelho.
       </Text>
 
@@ -125,7 +125,7 @@ export default function Settings() {
           ])
         }
       >
-        <Text style={{ color: '#E5684F', fontSize: 16 }}>Apagar todos os dados</Text>
+        <Text style={{ color: '#D9533A', fontSize: 15, fontFamily: F.medium }}>Apagar todos os dados</Text>
       </Pressable>
     </ScrollView>
   );
@@ -143,5 +143,5 @@ function Block({ title, subtitle, children }: { title: string; subtitle: string;
 const styles = StyleSheet.create({
   grabber: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 20, opacity: 0.5 },
   card: { borderRadius: radius.lg, padding: 18, marginBottom: 28 },
-  input: { height: 58, borderRadius: radius.md, paddingHorizontal: 20, fontSize: 18 },
+  input: { height: 52, borderRadius: radius.md, paddingHorizontal: 18, fontSize: 16, fontFamily: F.regular },
 });

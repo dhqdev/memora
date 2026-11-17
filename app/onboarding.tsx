@@ -2,7 +2,6 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -12,13 +11,14 @@ import {
   View,
   type ScrollViewInstance,
 } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { reactToAnswer, welcomeMessage } from '@/ai';
 import { LumiFace, Mood } from '@/components/Lumi';
 import { SpeechBubble } from '@/components/SpeechBubble';
-import { Chip, PrimaryButton, Segmented, monoText } from '@/components/ui';
+import { Chip, Label, PrimaryButton, Segmented, TypingBubble } from '@/components/ui';
 import { useStore } from '@/store';
-import { radius, useTheme } from '@/theme';
+import { body, radius, useTheme } from '@/theme';
 import { Pronoun, Reminder } from '@/types';
 
 type Step = 'intro' | 'name' | 'pronoun' | 'interests' | 'people' | 'reminder' | 'welcome';
@@ -117,12 +117,14 @@ export default function Onboarding() {
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <Text style={[monoText(c.muted, 12), { letterSpacing: 2 }]}>MEMORA · BOAS-VINDAS</Text>
+          <Label>Memora · boas-vindas</Label>
         </View>
 
         <ScrollView ref={scroll} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
           <View style={{ alignItems: 'center', marginBottom: 24 }}>
-            <LumiFace size={110} mood={mood} />
+            <Animated.View entering={FadeIn.duration(600)}>
+              <LumiFace size={104} mood={mood} />
+            </Animated.View>
           </View>
 
           {msgs.map((m, i) =>
@@ -135,22 +137,21 @@ export default function Onboarding() {
                 />
               </View>
             ) : (
-              <View key={i} style={[styles.me, { backgroundColor: c.card }]}>
-                <Text style={{ color: c.text, fontSize: 16 }}>{m.text}</Text>
-              </View>
+              <Animated.View key={i} entering={FadeInUp.duration(220)} style={[styles.me, { backgroundColor: c.invert }]}>
+                <Text style={body(15, c.invertText)}>{m.text}</Text>
+              </Animated.View>
             ),
           )}
 
           {thinking && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
-              <ActivityIndicator color={c.muted} size="small" />
-              <Text style={monoText(c.muted)}>Lumi está pensando…</Text>
-            </View>
+            <Animated.View entering={FadeIn.duration(200)} style={{ marginTop: 2 }}>
+              <TypingBubble />
+            </Animated.View>
           )}
         </ScrollView>
 
         {showControls && (
-          <View style={[styles.controls, { borderTopColor: c.border }]}>
+          <Animated.View key={step} entering={FadeInDown.duration(300)} style={[styles.controls, { borderTopColor: c.border }]}>
             {step === 'intro' && (
               <PrimaryButton
                 title="Prazer, Lumi!"
@@ -175,9 +176,10 @@ export default function Onboarding() {
                   returnKeyType="send"
                 />
                 <PrimaryButton
-                  title="→"
+                  title=""
+                  icon="send"
                   disabled={!input.trim()}
-                  style={{ width: 60, paddingHorizontal: 0 }}
+                  style={{ width: 54, height: 54, paddingHorizontal: 0 }}
                   onPress={() => answer(input.trim(), 'name', input.trim(), 'pronoun', { name: input.trim() })}
                 />
               </View>
@@ -257,7 +259,7 @@ export default function Onboarding() {
             )}
 
             {step === 'welcome' && <PrimaryButton title="Começar meu Memora" onPress={finish} />}
-          </View>
+          </Animated.View>
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -268,6 +270,6 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 8 },
   me: { alignSelf: 'flex-end', paddingVertical: 10, paddingHorizontal: 14, borderRadius: radius.md, marginBottom: 10, maxWidth: '80%' },
   controls: { padding: 20, borderTopWidth: StyleSheet.hairlineWidth },
-  input: { flex: 1, height: 56, borderRadius: radius.md, paddingHorizontal: 18, fontSize: 17 },
+  input: { flex: 1, height: 54, borderRadius: radius.pill, paddingHorizontal: 20, fontSize: 16 },
 });
 

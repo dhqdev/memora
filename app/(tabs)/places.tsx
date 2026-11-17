@@ -6,6 +6,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { LumiFace } from '@/components/Lumi';
 import { SpeechBubble } from '@/components/SpeechBubble';
 import { useStore } from '@/store';
+import { photoUri } from '@/photos';
 import { useTheme } from '@/theme';
 
 export default function PlacesTab() {
@@ -28,7 +29,7 @@ export default function PlacesTab() {
   return (
     <MapView
       style={{ flex: 1 }}
-      userInterfaceStyle={c.bg === '#121212' ? 'dark' : 'light'}
+      userInterfaceStyle={c.mode}
       initialRegion={{ latitude: first.latitude, longitude: first.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
     >
       {withPlace.map((m) => (
@@ -40,7 +41,7 @@ export default function PlacesTab() {
           description={m.place!.name}
         >
           {m.photos[0] ? (
-            <Image source={{ uri: m.photos[0] }} style={styles.pin} contentFit="cover" />
+            <Image source={{ uri: photoUri(m.photos[0]) }} style={styles.pin} contentFit="cover" />
           ) : (
             <View style={[styles.pin, { backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }]}>
               <Text>✦</Text>
@@ -54,5 +55,5 @@ export default function PlacesTab() {
 
 const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  pin: { width: 48, height: 60, borderRadius: 8, borderWidth: 2, borderColor: '#F2EFE6' },
+  pin: { width: 44, height: 54, borderRadius: 6, borderWidth: 2, borderColor: '#F2EFE6' },
 });

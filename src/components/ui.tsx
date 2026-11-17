@@ -1,31 +1,84 @@
-import React from 'react';
-import { Pressable, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
-import { mono, radius, useTheme } from '../theme';
+import React, { useEffect } from 'react';
+import {
+  Pressable,
+  PressableProps,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
+} from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { F, heading, highlightFor, mono, radius, useTheme } from '../theme';
+import { Icon, IconName } from './Icon';
 
-/** Botão quadrado com círculo interno — o estilo dos botões do topo. */
-export function SquareButton({
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/** Pressable que encolhe de leve no toque e volta com mola. */
+export function PressableScale({
+  scaleTo = 0.97,
+  style,
+  onPressIn,
+  onPressOut,
+  ...rest
+}: Omit<PressableProps, 'style'> & { scaleTo?: number; style?: StyleProp<ViewStyle> }) {
+  const s = useSharedValue(1);
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  return (
+    <AnimatedPressable
+      {...rest}
+      onPressIn={(e) => {
+        s.value = withTiming(scaleTo, { duration: 110 });
+        onPressIn?.(e);
+      }}
+      onPressOut={(e) => {
+        s.value = withSpring(1, { damping: 14, stiffness: 320 });
+        onPressOut?.(e);
+      }}
+      style={[style, anim]}
+    />
+  );
+}
+
+/** Botão redondo de ícone (topo das telas). `filled` = preto cheio, como o +. */
+export function IconButton({
   icon,
   onPress,
   filled,
   label,
+  size = 40,
 }: {
-  icon: string;
+  icon: IconName;
   onPress: () => void;
   filled?: boolean;
   label: string;
+  size?: number;
 }) {
   const c = useTheme();
   return (
-    <Pressable onPress={onPress} accessibilityLabel={label} style={[styles.square, { backgroundColor: c.chip }]}>
-      <View
-        style={[
-          styles.circle,
-          filled ? { backgroundColor: c.invert } : { borderColor: c.border, borderWidth: 1.5 },
-        ]}
-      >
-        <Text style={{ color: filled ? c.invertText : c.text, fontSize: filled ? 26 : 18, fontWeight: '400' }}>{icon}</Text>
-      </View>
-    </Pressable>
+    <PressableScale
+      onPress={onPress}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      hitSlop={6}
+      scaleTo={0.9}
+      style={[
+        styles.icon,
+        { width: size, height: size, borderRadius: size / 2 },
+        filled ? { backgroundColor: c.invert } : { borderColor: c.border, borderWidth: StyleSheet.hairlineWidth * 2 },
+      ]}
+    >
+      <Icon name={icon} size={filled ? 20 : 18} color={filled ? c.invertText : c.text} />
+    </PressableScale>
   );
 }
 
@@ -34,34 +87,34 @@ export function PrimaryButton({
   onPress,
   disabled,
   style,
+  icon,
 }: {
   title: string;
   onPress: () => void;
   disabled?: boolean;
   style?: ViewStyle;
+  icon?: IconName;
 }) {
   const c = useTheme();
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       disabled={disabled}
-      style={({ pressed }) => [
-        styles.primary,
-        { backgroundColor: c.invert, opacity: disabled ? 0.4 : pressed ? 0.85 : 1 },
-        style,
-      ]}
+      accessibilityRole="button"
+      style={[styles.primary, { backgroundColor: c.invert, opacity: disabled ? 0.35 : 1 }, style]}
     >
-      <Text style={[styles.primaryText, { color: c.invertText }]}>{title}</Text>
-    </Pressable>
+      {icon ? <Icon name={icon} size={20} color={c.invertText} /> : null}
+      {title ? <Text style={[styles.primaryText, { color: c.invertText }]}>{title}</Text> : null}
+    </PressableScale>
   );
 }
 
 export function OutlineButton({ title, onPress }: { title: string; onPress: () => void }) {
   const c = useTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.outline, { borderColor: c.text }]}>
-      <Text style={[styles.primaryText, { color: c.text, fontSize: 17 }]}>{title}</Text>
-    </Pressable>
+    <PressableScale onPress={onPress} accessibilityRole="button" style={[styles.outline, { borderColor: c.text }]}>
+      <Text style={[styles.primaryText, { color: c.text, fontSize: 15 }]}>{title}</Text>
+    </PressableScale>
   );
 }
 
@@ -86,7 +139,7 @@ export function Segmented<T extends string>({
             onPress={() => onChange(o.value)}
             style={[styles.segmentItem, active && { backgroundColor: c.invert }]}
           >
-            <Text style={{ color: active ? c.invertText : c.text, fontSize: 17, fontWeight: '500' }}>{o.label}</Text>
+            <Text style={{ color: active ? c.invertText : c.text, fontSize: 15, fontFamily: F.medium }}>{o.label}</Text>
           </Pressable>
         );
       })}
@@ -94,18 +147,30 @@ export function Segmented<T extends string>({
   );
 }
 
-export function Chip({ label, active, onPress }: { label: string; active?: boolean; onPress?: () => void }) {
+export function Chip({
+  label,
+  active,
+  onPress,
+  icon,
+}: {
+  label: string;
+  active?: boolean;
+  onPress?: () => void;
+  icon?: IconName;
+}) {
   const c = useTheme();
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
+      scaleTo={0.94}
       style={[
         styles.chip,
         { borderColor: active ? c.invert : c.border, backgroundColor: active ? c.invert : 'transparent' },
       ]}
     >
-      <Text style={{ color: active ? c.invertText : c.text, fontSize: 15 }}>{label}</Text>
-    </Pressable>
+      {icon ? <Icon name={icon} size={16} color={active ? c.invertText : c.text} /> : null}
+      <Text style={{ color: active ? c.invertText : c.text, fontSize: 14, fontFamily: F.medium }}>{label}</Text>
+    </PressableScale>
   );
 }
 
@@ -113,21 +178,122 @@ export function SectionTitle({ title, subtitle }: { title: string; subtitle?: st
   const c = useTheme();
   return (
     <View style={{ marginBottom: 12 }}>
-      <Text style={{ color: c.text, fontSize: 22, fontWeight: '500' }}>{title}</Text>
-      {subtitle ? <Text style={[monoText(c.muted), { marginTop: 2 }]}>{subtitle}</Text> : null}
+      <Text style={heading(18, c.text)}>{title}</Text>
+      {subtitle ? <Text style={[monoText(c.muted, 12), { marginTop: 2 }]}>{subtitle}</Text> : null}
     </View>
   );
 }
 
+/** Etiqueta mono em caixa alta: "MOMENT", "STORY", "PESSOAS"... */
+export function Label({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  const c = useTheme();
+  return <Text style={[monoText(c.muted, 11), { letterSpacing: 1.2, textTransform: 'uppercase' }, style]}>{children}</Text>;
+}
+
 export const monoText = (color: string, size = 13): TextStyle => ({ color, fontFamily: mono, fontSize: size });
 
+/** Texto com @menções destacadas em marca-texto colorido. */
+export function MentionText({ text, style }: { text: string; style?: StyleProp<TextStyle> }) {
+  const parts = text.split(/(@[\p{L}\d_]+)/u);
+  return (
+    <Text style={style}>
+      {parts.map((p, i) =>
+        i % 2 === 1 ? (
+          <Text key={i} style={{ backgroundColor: highlightFor(p.slice(1)), color: '#141413' }}>
+            {p}
+          </Text>
+        ) : (
+          p
+        ),
+      )}
+    </Text>
+  );
+}
+
+/** Avatar redondo: foto, ou inicial sobre um tom pastel fixo por nome. */
+export function Avatar({ name, size = 56, children }: { name: string; size?: number; children?: React.ReactNode }) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: highlightFor(name),
+        overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {children ?? (
+        <Text style={{ fontFamily: F.semibold, fontSize: size * 0.4, color: '#141413' }}>{name[0]?.toUpperCase()}</Text>
+      )}
+    </View>
+  );
+}
+
+/** Três pontinhos pulsando dentro do balão preto: a Lumi está escrevendo. */
+export function TypingBubble() {
+  return (
+    <View style={styles.typing} accessibilityLabel="A Lumi está escrevendo">
+      {[0, 1, 2].map((i) => (
+        <TypingDot key={i} delay={i * 150} />
+      ))}
+    </View>
+  );
+}
+
+function TypingDot({ delay }: { delay: number }) {
+  const o = useSharedValue(0.25);
+  useEffect(() => {
+    o.value = withDelay(
+      delay,
+      withRepeat(withSequence(withTiming(1, { duration: 320 }), withTiming(0.25, { duration: 320 })), -1),
+    );
+  }, [delay, o]);
+  const anim = useAnimatedStyle(() => ({ opacity: o.value, transform: [{ translateY: (1 - o.value) * 2 }] }));
+  return <Animated.View style={[styles.dot, anim]} />;
+}
+
 const styles = StyleSheet.create({
-  square: { width: 58, height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  circle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  primary: { height: 60, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
-  primaryText: { fontSize: 19, fontWeight: '500' },
-  outline: { height: 54, borderRadius: radius.pill, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  segment: { flexDirection: 'row', borderWidth: 1, borderRadius: radius.pill, padding: 5 },
-  segmentItem: { flex: 1, height: 52, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
-  chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: radius.pill, borderWidth: 1.5, marginRight: 8, marginBottom: 8 },
+  icon: { alignItems: 'center', justifyContent: 'center' },
+  primary: {
+    height: 54,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  primaryText: { fontSize: 16, fontFamily: F.semibold, letterSpacing: -0.2 },
+  outline: {
+    height: 48,
+    borderRadius: radius.pill,
+    borderWidth: 1.2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segment: { flexDirection: 'row', borderWidth: 1, borderRadius: radius.pill, padding: 4 },
+  segmentItem: { flex: 1, height: 44, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  typing: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: 5,
+    backgroundColor: '#141413',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 3,
+  },
+  dot: { width: 6, height: 6, backgroundColor: '#F2EFE6' },
 });
