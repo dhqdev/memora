@@ -1,13 +1,14 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View, type ScrollViewInstance } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View, type ScrollViewInstance } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Glass } from '@/components/Glass';
 import { LumiFace } from '@/components/Lumi';
 import { SpeechBubble } from '@/components/SpeechBubble';
 import { IconButton, PressableScale, monoText } from '@/components/ui';
+import { mapStyle } from '@/map/styles';
 import { MONTHS_SHORT } from '@/format';
 import { photoUri } from '@/photos';
 import { useStore } from '@/store';
@@ -24,19 +25,23 @@ const GAP = 10;
 export default function PlacesTab() {
   const c = useTheme();
   const { width } = useWindowDimensions();
-  const { moments } = useStore();
+  const { moments, profile } = useStore();
   const map = useRef<MapView>(null);
   const list = useRef<ScrollViewInstance>(null);
-  const [active, setActive] = useState(0);
+  const [selected, setActive] = useState(0);
   const withPlace = useMemo(
     () => moments.filter((m) => m.place).sort((a, b) => +new Date(b.date) - +new Date(a.date)),
     [moments],
   );
+  // se um moment com lugar for apagado, o selecionado não pode apontar pro vazio
+  const active = Math.min(selected, Math.max(0, withPlace.length - 1));
 
   const fitAll = () => {
     const coords = withPlace.map((m) => ({ latitude: m.place!.latitude, longitude: m.place!.longitude }));
     if (coords.length > 1) {
-      map.current?.fitToCoordinates(coords, { edgePadding: { top: 80, right: 60, bottom: 220, left: 60 }, animated: true });
+      map.current?.fitToCoordinates(coords, { edgePadding: { top: 90, right: 60, bottom: 70, left: 60 }, animated: true });
+    } else if (coords.length === 1) {
+      map.current?.animateToRegion({ ...coords[0], latitudeDelta: 0.02, longitudeDelta: 0.02 }, 380);
     }
   };
 
@@ -60,7 +65,7 @@ export default function PlacesTab() {
   if (!withPlace.length) {
     return (
       <Animated.View entering={FadeIn.duration(300)} style={styles.empty}>
-        <LumiFace size={88} mood="thinking" />
+        {profile.showBuddy && <LumiFace size={88} mood="thinking" />}
         <View style={{ marginTop: 18 }}>
           <SpeechBubble text="Quando você salvar um moment com lugar, ele aparece aqui no mapa." />
         </View>
@@ -76,18 +81,14 @@ export default function PlacesTab() {
         style={StyleSheet.absoluteFill}
         userInterfaceStyle={c.mode}
         showsPointsOfInterests={false}
+        mapType={Platform.OS === 'ios' ? 'mutedStandard' : 'standard'}
+        customMapStyle={Platform.OS === 'android' ? mapStyle[c.mode] : undefined}
+        toolbarEnabled={false}
+        mapPadding={{ top: 0, right: 0, bottom: 200, left: 0 }}
         initialRegion={{ latitude: first.latitude, longitude: first.longitude, latitudeDelta: 0.03, longitudeDelta: 0.03 }}
       >
         {withPlace.map((m, i) => (
-          <Marker
-            key={m.id}
-            coordinate={{ latitude: m.place!.latitude, longitude: m.place!.longitude }}
-            onPress={() => focus(i, true)}
-            anchor={{ x: 0.5, y: 1 }}
-            tracksViewChanges={false}
-          >
-            <Pin moment={m} active={i === active} />
-          </Marker>
+          <PhotoMarker key={m.id} moment={m} active={i === active} onPress={() => focus(i, true)} />
         ))}
       </MapView>
 
@@ -134,20 +135,49 @@ export default function PlacesTab() {
   );
 }
 
-/** Pin com a foto do moment, moldura clara e um biquinho apontando o lugar. */
-function Pin({ moment, active }: { moment: Moment; active: boolean }) {
+/**
+ * Pin com a foto do moment, moldura clara e um biquinho apontando o lugar.
+ * O mapa "fotografa" o pin para desenhar; por isso ele acompanha as mudanças
+ * só até a foto carregar (e por um instante quando é selecionado) — assim o
+ * pin não fica em branco e o mapa continua leve.
+ */
+function PhotoMarker({ moment, active, onPress }: { moment: Moment; active: boolean; onPress: () => void }) {
+  const photo = moment.photos[0];
+  const [track, setTrack] = useState(true);
+  const [loaded, setLoaded] = useState(!photo);
+  useEffect(() => {
+    if (!loaded) return;
+    setTrack(true);
+    const t = setTimeout(() => setTrack(false), 400);
+    return () => clearTimeout(t);
+  }, [active, loaded]);
+
   const size = active ? 58 : 46;
   return (
-    <View style={{ alignItems: 'center' }}>
-      <View style={[styles.pin, { width: size, height: size * 1.2 }]}>
-        {moment.photos[0] ? (
-          <Image source={{ uri: photoUri(moment.photos[0]) }} style={StyleSheet.absoluteFill} contentFit="cover" />
-        ) : (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F5D565' }]} />
-        )}
+    <Marker
+      coordinate={{ latitude: moment.place!.latitude, longitude: moment.place!.longitude }}
+      onPress={onPress}
+      anchor={{ x: 0.5, y: 1 }}
+      zIndex={active ? 2 : 1}
+      tracksViewChanges={track}
+    >
+      <View style={{ alignItems: 'center' }}>
+        <View style={[styles.pin, { width: size, height: size * 1.2 }]}>
+          {photo ? (
+            <Image
+              source={{ uri: photoUri(photo) }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              onLoad={() => setLoaded(true)}
+              onError={() => setLoaded(true)}
+            />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#F5D565' }]} />
+          )}
+        </View>
+        <View style={styles.beak} />
       </View>
-      <View style={styles.beak} />
-    </View>
+    </Marker>
   );
 }
 

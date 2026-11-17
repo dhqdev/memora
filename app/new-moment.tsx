@@ -16,7 +16,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { commentMoment, suggestTitle } from '@/ai';
+import { commentMoment, fallbackTitle, suggestTitle } from '@/ai';
+import { canComment, extractMentions } from '@/rules';
 import { Chip, Label, PrimaryButton, monoText } from '@/components/ui';
 import { persistPhoto } from '@/photos';
 import { uid, useStore } from '@/store';
@@ -26,7 +27,7 @@ import { FREE_COMMENTS, Moment, Place } from '@/types';
 export default function NewMoment() {
   const c = useTheme();
   const store = useStore();
-  const { stories, profile, addMoment, updateMoment, updateProfile, upsertPerson } = store;
+  const { stories, profile, addMoment, updateMoment, countComment, upsertPerson } = store;
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
@@ -34,6 +35,9 @@ export default function NewMoment() {
   const [locating, setLocating] = useState(false);
   const [storyId, setStoryId] = useState<string | undefined>(stories[0]?.id);
   const [saving, setSaving] = useState(false);
+
+  // aberto por link direto não tem tela pra voltar: cai na lista de moments
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   async function pickPhoto() {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, allowsMultipleSelection: true, selectionLimit: 4 });
@@ -64,14 +68,14 @@ export default function NewMoment() {
 
   async function save() {
     setSaving(true);
-    const mentions = [...new Set([...text.matchAll(/@([\p{L}\d_]+)/gu)].map((m) => m[1]))];
-    const people = mentions.map((n) => upsertPerson(n));
-    const finalTitle = title.trim() || (await suggestTitle(text));
+    const people = extractMentions(text).map((n) => upsertPerson(n));
+    const typedTitle = title.trim();
     const saved = await Promise.all(photos.map(persistPhoto));
-    const willComment = profile.plus || profile.commentsUsed < FREE_COMMENTS;
+    const willComment = canComment(profile);
     const moment: Moment = {
       id: uid(),
-      title: finalTitle,
+      // salva na hora (limite de Doherty: nada de esperar a IA pra fechar a tela)
+      title: typedTitle || fallbackTitle(text),
       text: text.trim(),
       photos: saved,
       people: people.map((p) => p.id),
@@ -81,14 +85,19 @@ export default function NewMoment() {
       commentPending: willComment,
     };
     addMoment(moment);
+    // conta já ao salvar: dois moments seguidos não passam do limite grátis
+    if (willComment) countComment();
     if (profile.haptics) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    router.back();
+    close();
 
-    // A Lumi comenta em segundo plano (10 grátis, ilimitado no Memora+).
+    // Em segundo plano: a Lumi sugere o título (se ficou vazio) e comenta
+    // (10 comentários no grátis, ilimitado no Memora+).
+    if (!typedTitle && text.trim()) {
+      suggestTitle(text).then((t) => t && updateMoment(moment.id, { title: t }));
+    }
     if (willComment) {
       const comment = await commentMoment(moment, profile, people.map((p) => p.name));
       updateMoment(moment.id, { companionComment: comment, commentPending: false, commentAt: new Date().toISOString() });
-      updateProfile({ commentsUsed: profile.commentsUsed + 1 });
     }
   }
 
@@ -96,7 +105,7 @@ export default function NewMoment() {
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
-          <Pressable onPress={() => router.back()}>
+          <Pressable onPress={close}>
             <Text style={{ color: c.muted, fontSize: 15, fontFamily: F.medium }}>Cancelar</Text>
           </Pressable>
           <Label>Novo moment</Label>

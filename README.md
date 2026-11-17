@@ -16,24 +16,24 @@ Inspiração de produto e de estilo: [OhMy! Journal](https://ohmyjournal.app/), 
 | **Moments** | Linha do tempo agrupada por mês, com fotos, lugar, story e pessoas. Marque amigos com `@nome` e uma página da pessoa é criada automaticamente. |
 | **Stories** | Capítulos por parte da vida (Dia a dia, Amigos, Família, Estudos…). A Lumi escreve e reescreve cada capítulo a partir dos seus moments. |
 | **Calendário** | Mês em grade com a miniatura de cada dia que tem moment. |
-| **Lugares** | Mapa com pins de foto e um carrossel de vidro: deslize e o mapa voa até o lugar. |
+| **Lugares** | Mapa com pins de foto e um carrossel de vidro: deslize e o mapa voa até o lugar. No iOS usa o Apple Maps (tom discreto); no Android, Google Maps com estilo próprio creme/grafite. |
 | **Perfil** | Foto, nome, @usuário, bio, números, suas pessoas e o grid dos seus moments. Dá pra compartilhar. |
 | **Lumi** | Botão flutuante para conversar com ela. Ela conhece seus moments recentes. |
-| **Ajustes** | Nome, pronome, tema (claro/escuro/sistema), vibração, mostrar a Lumi e lembrete da noite. |
+| **Ajustes** | Nome, pronome, tema (claro/escuro/sistema), voz da Lumi (um "pio" baixinho por palavra), vibração, mostrar a Lumi, notificações e apagar todos os dados (inclusive as fotos). |
 | **Memora+** | Paywall (anual com 7 dias grátis / mensal). No grátis: a Lumi comenta 10 moments e você tem 4 stories. *As compras ainda não estão integradas.* |
 
 ## Stack
 
 - **Expo SDK 58** + **Expo Router** (rotas por arquivo em `app/`)
 - TypeScript
-- `AsyncStorage` para os dados locais (tudo fica no aparelho)
-- `expo-image-picker`, `expo-location`, `react-native-maps`, `expo-notifications`, `expo-haptics`
+- **SQLite local** (`expo-sqlite`) para os dados: tudo fica no aparelho, com migrações versionadas (ver [Banco de dados local](#banco-de-dados-local))
+- `expo-image-picker`, `expo-location`, `react-native-maps`, `expo-notifications`, `expo-haptics`, `expo-audio`, `expo-file-system`
 - `react-native-svg` para a Lumi (desenho original com expressões) e os ícones
 - `react-native-reanimated` para as transições (entrada dos itens, "digitando…", toque, Lumi flutuando)
 - `@shopify/react-native-skia` para o efeito pontilhado (dithering) das capas dos stories
 - Fontes Inter Tight (títulos), JetBrains Mono (etiquetas) e Pixelify Sans (falas da Lumi), via `@expo-google-fonts`
 - **Liquid Glass** da Apple com `expo-glass-effect` nos botões, cartões do mapa e na assinatura (no Android e iOS antigo cai para um bloco translúcido)
-- A Lumi é um retrato em traço preto e branco, em SVG (`src/components/lumiArt.ts`), com 4 humores
+- A Lumi é um retrato original em traço preto e branco, estilo mangá, desenhado em SVG (`src/components/lumiArt.ts`): franja em mechas, presilha ✦, olhos com íris em camadas, blush em retícula e suéter de gola canelada. 4 humores (feliz, animada, pensando, com sono) e piscada
 - **Servidor de IA** em `server/index.mjs` (Node puro, zero dependências) chamando a API da Anthropic
 
 ## Estrutura
@@ -54,13 +54,58 @@ memora/
 │   └── paywall.tsx
 ├── src/
 │   ├── ai.ts                 # cliente de IA (com falas offline de fallback)
-│   ├── store.tsx             # estado global + persistência
+│   ├── store.tsx             # estado global (grava no banco a cada ação)
+│   ├── db/                   # SQLite: schema + migrações, leitura/escrita, importação
+│   ├── rules.ts              # regras do produto (limites, @menções, lembrete)
+│   ├── reminders.ts          # agenda o lembrete só nos dias sem moment
+│   ├── photos.ts             # copia as fotos pra pasta do app
+│   ├── map/styles.ts         # estilo do mapa no Android
 │   ├── theme.ts              # cores, tema claro/escuro
 │   ├── types.ts
 │   └── components/           # Lumi, SpeechBubble, botões, segmented…
+├── __tests__/                # testes (Jest)
 ├── server/index.mjs          # backend da IA (a chave fica só aqui)
 └── assets/                   # ícone e splash (provisórios)
 ```
+
+## Banco de dados local
+
+Tudo fica num arquivo SQLite no aparelho (`memora.db`), aberto em `src/db/index.ts`.
+
+| Tabela | Guarda |
+|---|---|
+| `settings` | o perfil (chave `profile`, em JSON) |
+| `moments` | texto, fotos (caminhos relativos), lugar, data, story e o comentário da Lumi |
+| `stories` | capítulos (o texto escrito pela Lumi fica em `body`) |
+| `people` | pessoas marcadas com `@` (nome único, sem diferenciar maiúsculas) |
+| `moment_people` | quem aparece em cada moment |
+
+- **Migrações:** ficam em `src/db/schema.ts` e a versão em `PRAGMA user_version`. Para mudar o schema, **adicione** um item no fim de `MIGRATIONS` (nunca edite um que já foi publicado).
+- **Integridade:** chaves estrangeiras ligadas. Apagar um moment apaga as marcações; apagar um story mantém os moments (só tira deles o story).
+- **Escritas em fila:** cada ação da tela grava na hora, numa fila que nunca se atropela. A tela não espera o banco.
+- **Quem usava a versão antiga** (dados no AsyncStorage) tem tudo importado na primeira abertura, uma vez só. Nomes repetidos viram uma pessoa só e referências quebradas são limpas.
+- **Fotos** são copiadas para a pasta do app (`photos/`) e somem junto quando o moment é apagado.
+
+## Regras do produto
+
+Ficam em `src/rules.ts` e têm testes:
+
+| Regra | Como funciona |
+|---|---|
+| Comentários da Lumi | Grátis: 10 moments comentados. Conta na hora de salvar, então dois moments seguidos não passam do limite. Memora+: ilimitado. |
+| Stories | Grátis: 4. O 5º abre a assinatura. Memora+: ilimitado. |
+| `@menções` | Cada `@nome` vira uma pessoa (sem repetir, sem diferenciar maiúsculas). |
+| Lembrete da noite | Às 21h ou 22h, **só nos dias sem moment**, para os próximos 7 dias. Reagenda ao salvar ou apagar um moment. |
+| Título automático | Se você não escrever título, a Lumi sugere um; sem IA, usa a primeira frase cortada numa palavra inteira. |
+
+## Testes
+
+```bash
+npm test          # Jest: regras, banco (SQLite de verdade), datas, arte da Lumi
+npm run lint      # checagem de tipos (tsc)
+```
+
+Os testes do banco rodam no SQLite que vem no Node 22+ (`node:sqlite`), com o mesmo schema e as mesmas queries do aparelho.
 
 ## Rodando no celular com Expo Go
 
@@ -120,13 +165,14 @@ eas submit --platform android
 
 Bundle IDs atuais: `com.dhqdev.memora` (ajuste em `app.json` se quiser).
 
+**Mapa no Android:** crie uma chave do *Maps SDK for Android* no Google Cloud (restrita ao pacote `com.dhqdev.memora`) e cadastre no EAS como `GOOGLE_MAPS_ANDROID_API_KEY`. O `app.config.js` injeta a chave no build. Sem ela, a aba Lugares fica cinza no Android. No iOS não precisa (Apple Maps).
+
 ## Roadmap
 
 - [ ] Compras reais do Memora+ (RevenueCat ou `expo-iap`)
 - [ ] Sincronização na nuvem (iCloud/Supabase) e login
 - [ ] Deploy do servidor de IA (Render, Railway, Fly ou Vercel)
-- [ ] Som de "voz" da Lumi (o ajuste já existe; o áudio ainda não)
-- [ ] Mais expressões da Lumi e ilustrações próprias
+- [ ] Mais expressões da Lumi e ilustrações para as telas vazias
 - [ ] Retrospectiva do ano e cards para compartilhar
 - [ ] Busca nos moments
 - [ ] Ícone e splash definitivos

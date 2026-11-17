@@ -29,7 +29,7 @@ export default function MomentsTab() {
   if (!moments.length) {
     return (
       <Animated.View entering={FadeIn.duration(400)} style={styles.empty}>
-        <LumiFace size={88} mood="excited" />
+        {profile.showBuddy && <LumiFace size={88} mood="excited" />}
         <View style={{ marginVertical: 20 }}>
           <SpeechBubble text={`${profile.name ? profile.name + ', s' : 'S'}eu primeiro moment pode ser só uma frase. Bora?`} />
         </View>

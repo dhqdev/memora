@@ -14,6 +14,7 @@ import {
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { reactToAnswer, welcomeMessage } from '@/ai';
+import { toHandle } from '@/rules';
 import { LumiFace, Mood } from '@/components/Lumi';
 import { SpeechBubble } from '@/components/SpeechBubble';
 import { Chip, Label, PrimaryButton, Segmented, TypingBubble } from '@/components/ui';
@@ -96,17 +97,8 @@ export default function Onboarding() {
   }
 
   async function finish() {
-    if (draft.reminder !== 'off') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status === 'granted') {
-        await Notifications.cancelAllScheduledNotificationsAsync();
-        await Notifications.scheduleNotificationAsync({
-          content: { title: 'Memora', body: `Como foi seu dia, ${draft.name}? A Lumi quer saber ✦` },
-          trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: Number(draft.reminder), minute: 0 },
-        });
-      }
-    }
-    updateProfile({ ...draft, onboarded: true, joinedAt: new Date().toISOString(), handle: draft.name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '') });
+    if (draft.reminder !== 'off') await Notifications.requestPermissionsAsync().catch(() => {});
+    updateProfile({ ...draft, onboarded: true, joinedAt: new Date().toISOString(), handle: toHandle(draft.name) });
     router.replace('/(tabs)');
   }
 

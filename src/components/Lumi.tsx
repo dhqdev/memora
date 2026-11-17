@@ -16,9 +16,10 @@ import { PressableScale } from './ui';
 export type { Mood } from './lumiArt';
 
 const cache = new Map<string, string>();
-const xmlFor = (m: Mood) => {
-  if (!cache.has(m)) cache.set(m, lumiSvg(m));
-  return cache.get(m)!;
+const xmlFor = (m: Mood, blink: boolean) => {
+  const key = blink ? `${m}:blink` : m;
+  if (!cache.has(key)) cache.set(key, lumiSvg(m, blink));
+  return cache.get(key)!;
 };
 
 /**
@@ -26,7 +27,7 @@ const xmlFor = (m: Mood) => {
  * desenho original. `blink` fecha os olhos por um instante.
  */
 export function LumiFace({ size = 64, mood = 'happy', blink = false }: { size?: number; mood?: Mood; blink?: boolean }) {
-  return <SvgXml xml={xmlFor(blink ? 'sleepy' : mood)} width={size} height={size} />;
+  return <SvgXml xml={xmlFor(mood, blink)} width={size} height={size} />;
 }
 
 /** Botão flutuante da Lumi: flutua devagar e pisca de vez em quando. */

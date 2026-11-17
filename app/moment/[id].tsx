@@ -16,7 +16,7 @@ import { body, display, F, radius, useTheme } from '@/theme';
 export default function MomentDetail() {
   const c = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { moments, people, stories, deleteMoment } = useStore();
+  const { moments, people, stories, profile, deleteMoment } = useStore();
   const m = moments.find((x) => x.id === id);
   if (!m) return null;
 
@@ -80,7 +80,7 @@ export default function MomentDetail() {
             <View style={{ flex: 1, alignItems: 'flex-end' }}>
               {m.commentPending ? <TypingBubble /> : <SpeechBubble text={m.companionComment!} instant={!isFresh(m.commentAt, 15000)} />}
             </View>
-            <LumiFace size={52} mood={m.commentPending ? 'thinking' : 'excited'} />
+            {profile.showBuddy && <LumiFace size={52} mood={m.commentPending ? 'thinking' : 'excited'} />}
           </Animated.View>
         )}
       </ScrollView>

@@ -26,3 +26,22 @@ export function photoUri(stored: string): string {
   if (/^[a-z]+:/i.test(stored)) return stored;
   return new File(Paths.document, stored).uri;
 }
+
+/** Apaga do aparelho as fotos que o app copiou (ignora URIs externas). */
+export function deletePhotos(stored: string[]) {
+  for (const s of stored) {
+    if (/^[a-z]+:/i.test(s)) continue;
+    try {
+      const f = new File(Paths.document, s);
+      if (f.exists) f.delete();
+    } catch {}
+  }
+}
+
+/** "Apagar todos os dados": some com a pasta de fotos inteira. */
+export function wipePhotos() {
+  try {
+    const dir = new Directory(Paths.document, DIR);
+    if (dir.exists) dir.delete();
+  } catch {}
+}

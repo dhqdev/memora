@@ -10,14 +10,15 @@ import { JetBrainsMono_400Regular, JetBrainsMono_700Bold } from '@expo-google-fo
 import { PixelifySans_400Regular } from '@expo-google-fonts/pixelify-sans';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { useColorScheme, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Platform, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { syncReminders } from '@/reminders';
 import { StoreProvider, useStore } from '@/store';
 import { dark, light, useTheme } from '@/theme';
 
 function Root() {
-  const { ready } = useStore();
+  const { ready, profile, moments } = useStore();
   const c = useTheme();
   const scheme = useColorScheme();
   const [fontsLoaded] = useFonts({
@@ -30,6 +31,11 @@ function Root() {
     JetBrainsMono_700Bold,
     PixelifySans_400Regular,
   });
+
+  // Lembrete da noite: reagenda ao abrir, ao mudar o ajuste e a cada moment novo/apagado.
+  useEffect(() => {
+    if (ready && Platform.OS !== 'web') syncReminders(profile.reminder, profile.name, moments);
+  }, [ready, profile.reminder, profile.name, moments]);
 
   // Fundo liso enquanto carrega: emenda com o splash, sem "piscar".
   if (!ready || !fontsLoaded) return <View style={{ flex: 1, backgroundColor: scheme === 'light' ? light.bg : dark.bg }} />;

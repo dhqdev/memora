@@ -8,7 +8,8 @@ import { Chip, Label, PressableScale, monoText } from '@/components/ui';
 import { photoUri } from '@/photos';
 import { uid, useStore } from '@/store';
 import { F, heading, mono, radius, useTheme } from '@/theme';
-import { FREE_STORIES, Story } from '@/types';
+import { storiesLeft } from '@/rules';
+import { Story } from '@/types';
 
 const CATEGORIES = ['Dia a dia', 'Amigos', 'Família', 'Amor', 'Estudos', 'Treino', 'Viagens', 'Trabalho'];
 /** Alturas relativas à largura da coluna: o grid fica "em degraus". */
@@ -21,12 +22,12 @@ export default function StoriesTab() {
   const c = useTheme();
   const { width } = useWindowDimensions();
   const { stories, moments, profile, addStory } = useStore();
-  const remaining = Math.max(0, FREE_STORIES - stories.length);
+  const remaining = storiesLeft(profile, stories);
   const [picking, setPicking] = useState(false);
   const colW = (width - 40 - GAP) / 2;
 
   function newStory() {
-    if (!profile.plus && remaining === 0) return router.push('/paywall');
+    if (remaining === 0) return router.push('/paywall');
     setPicking((p) => !p);
   }
 

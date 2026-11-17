@@ -78,8 +78,18 @@ export function commentMoment(moment: Moment, profile: Profile, peopleNames: str
   );
 }
 
+/** Título instantâneo (primeira frase), usado enquanto a IA não responde. */
+/** Título de emergência (sem IA): primeira frase, sem "@", cortada numa palavra inteira. */
+export function fallbackTitle(text: string) {
+  const first = text.trim().split(/[.!?\n]/)[0].replace(/@/g, '').replace(/\s+/g, ' ').trim();
+  if (first.length <= 42) return first || 'Um moment';
+  const cut = first.slice(0, 43); // o 43º caractere diz se a palavra acabou no limite
+  const sp = cut.lastIndexOf(' ');
+  return cut.slice(0, sp > 20 ? sp : 42).replace(/[,;:\s]+$/, '') + '…';
+}
+
 export function suggestTitle(text: string) {
-  const fb = text.split(/[.!?\n]/)[0].slice(0, 40) || 'Um moment';
+  const fb = fallbackTitle(text);
   return call('moment_title', { text }, fb);
 }
 

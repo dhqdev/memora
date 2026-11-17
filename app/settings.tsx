@@ -33,14 +33,11 @@ export default function Settings() {
 
   async function setReminder(v: Reminder) {
     updateProfile({ reminder: v });
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    if (v === 'off') return;
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== 'granted') return;
-    await Notifications.scheduleNotificationAsync({
-      content: { title: 'Memora', body: `Como foi seu dia, ${profile.name}? A Lumi quer saber ✦` },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: Number(v), minute: 0 },
-    });
+    // o agendamento em si fica em app/_layout.tsx (só nos dias sem moment)
+    if (v !== 'off') {
+      const p = await Notifications.requestPermissionsAsync().catch(() => null);
+      if (p) setNotif(p.status);
+    }
   }
 
   return (

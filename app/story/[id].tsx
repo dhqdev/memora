@@ -1,13 +1,13 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { writeStory } from '@/ai';
 import { LumiFace } from '@/components/Lumi';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { Label, OutlineButton, PressableScale, TypingBubble, monoText } from '@/components/ui';
+import { IconButton, Label, OutlineButton, PressableScale, TypingBubble, monoText } from '@/components/ui';
 import { photoUri } from '@/photos';
 import { MONTHS_SHORT } from '@/format';
 import { useStore } from '@/store';
@@ -16,7 +16,7 @@ import { body, display, heading, mono, radius, useTheme } from '@/theme';
 export default function StoryDetail() {
   const c = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { stories, moments, profile, updateStory } = useStore();
+  const { stories, moments, profile, updateStory, deleteStory } = useStore();
   const [writing, setWriting] = useState(false);
   const story = stories.find((s) => s.id === id);
   if (!story) return null;
@@ -32,9 +32,22 @@ export default function StoryDetail() {
     setWriting(false);
   }
 
+  const remove = () =>
+    Alert.alert('Apagar story?', 'Os moments continuam salvos, só saem deste story.', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Apagar',
+        style: 'destructive',
+        onPress: () => {
+          router.back();
+          deleteStory(story!.id);
+        },
+      },
+    ]);
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScreenHeader label="Story" />
+      <ScreenHeader label="Story" right={<IconButton icon="more" label="Opções" onPress={remove} />} />
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
         <Animated.View entering={FadeInDown.duration(380)}>
         <Text style={monoText(c.muted, 11)}>
@@ -59,7 +72,7 @@ export default function StoryDetail() {
         <View style={{ marginTop: 16 }}>
           {writing ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <LumiFace size={40} mood="thinking" />
+              {profile.showBuddy && <LumiFace size={40} mood="thinking" />}
               <TypingBubble />
             </View>
           ) : (

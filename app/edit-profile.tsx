@@ -9,7 +9,7 @@ import { persistPhoto, photoUri } from '@/photos';
 import { useStore } from '@/store';
 import { body, F, radius, useTheme } from '@/theme';
 
-const cleanHandle = (s: string) => s.toLowerCase().replace(/^@/, '').replace(/[^a-z0-9._]/g, '').slice(0, 24);
+import { toHandle as cleanHandle } from '@/rules';
 
 export default function EditProfile() {
   const c = useTheme();
