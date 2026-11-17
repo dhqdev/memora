@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Memora",
+    "slug": "memora",
+    "scheme": "memora",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#121212"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dhqdev.memora",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "O Memora usa suas fotos para guardar seus moments.",
+        "NSCameraUsageDescription": "O Memora usa a câmera para registrar seus moments.",
+        "NSLocationWhenInUseUsageDescription": "O Memora usa sua localização para lembrar onde cada moment aconteceu."
+      }
+    },
+    "android": {
+      "package": "com.dhqdev.memora",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#121212"
+      },
+      "permissions": ["ACCESS_FINE_LOCATION", "CAMERA", "READ_MEDIA_IMAGES"]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        { "photosPermission": "O Memora usa suas fotos para guardar seus moments." }
+      ],
+      [
+        "expo-location",
+        { "locationWhenInUsePermission": "O Memora usa sua localização para lembrar onde cada moment aconteceu." }
+      ],
+      "expo-notifications"
+    ],
+    "experiments": { "typedRoutes": true }
+  }
+}
