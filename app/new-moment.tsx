@@ -110,7 +110,7 @@ export default function NewMoment() {
           <TextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="Título (a Lumi sugere se ficar vazio)"
+            placeholder="Título (opcional)"
             placeholderTextColor={c.muted}
             style={[display(26, c.text), styles.title]}
           />

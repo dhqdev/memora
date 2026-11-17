@@ -50,9 +50,11 @@ export default function CalendarTab() {
             ))}
           </ScrollView>
         )}
-        <Text style={[display(30, c.text), styles.heroText]}>
-          {inMonth.length} moment{inMonth.length === 1 ? '' : 's'}
-        </Text>
+        <View style={styles.heroLabel}>
+          <Text style={[monoText('#F2EFE6', 13), { letterSpacing: 0.5 }]}>
+            {inMonth.length} moment{inMonth.length === 1 ? '' : 's'}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.monthRow}>
@@ -103,7 +105,7 @@ export default function CalendarTab() {
 const styles = StyleSheet.create({
   hero: { height: 200, justifyContent: 'center', marginBottom: 24 },
   heroImg: { width: 90, height: 120, borderRadius: 8, marginRight: 24, opacity: 0.85 },
-  heroText: { position: 'absolute', alignSelf: 'center' },
+  heroLabel: { position: 'absolute', alignSelf: 'center', backgroundColor: '#141413', paddingHorizontal: 12, paddingVertical: 8 },
   monthRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 },
   week: { flexDirection: 'row', marginBottom: 12 },
   weekday: { width: `${100 / 7}%`, textAlign: 'center' },
